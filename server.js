@@ -29,6 +29,27 @@ db.exec(`CREATE TABLE IF NOT EXISTS users (
 )`);
 
 app.use(express.json());
+
+// Serve legal.html with env-var substitutions
+app.get('/legal.html', (_req, res) => {
+  let html = fs.readFileSync(path.join(__dirname, 'public', 'legal.html'), 'utf8');
+  const subs = {
+    '[First name Last name]': process.env.LEGAL_NAME,
+    '[Street and house number]': process.env.LEGAL_STREET,
+    '[Postal code City]': process.env.LEGAL_CITY,
+    '[Country]': process.env.LEGAL_COUNTRY,
+    '[contact@example.com]': process.env.LEGAL_EMAIL,
+  };
+  for (const [placeholder, value] of Object.entries(subs)) {
+    if (value) {
+      html = html.split(`<span class="placeholder">${placeholder}</span>`).join(value);
+      html = html.split(placeholder).join(value);
+    }
+  }
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(html);
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 const SESSIONS = JSON.parse(

@@ -8,6 +8,11 @@ services:
     environment:
       - NODE_ENV=production
       - DATA_DIR=/data
+      - LEGAL_NAME=
+      - LEGAL_STREET=
+      - LEGAL_CITY=
+      - LEGAL_COUNTRY=
+      - LEGAL_EMAIL=
     networks:
       - public_proxymanager
 

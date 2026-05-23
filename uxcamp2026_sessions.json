@@ -5,7 +5,7 @@
     {
       "id": "session-1",
       "label": "Session 1",
-      "time": "09:00–09:45",
+      "time": "10:00–10:45",
       "sessions": [
         { "number": 104, "title": "Design Management at Enterprise Scale", "type": "Discussion" },
         { "number": 110, "title": "My 10 Biggest A-Ha Moments and what it means for AI → Design", "type": "Talk" },
@@ -21,7 +21,7 @@
     {
       "id": "session-2",
       "label": "Session 2",
-      "time": "10:00–10:45",
+      "time": "11:00–11:45",
       "sessions": [
         { "number": 32,  "title": "From Hype to Habbit", "type": "Discussion" },
         { "number": 40,  "title": "Lean UX Tracking. Let's talk metrics", "type": "Discussion" },
@@ -38,7 +38,7 @@
     {
       "id": "session-3",
       "label": "Session 3",
-      "time": "12:00–12:45",
+      "time": "14:00–14:45",
       "sessions": [
         { "number": 60,  "title": "From Precision to Playfulness", "type": "Talk" },
         { "number": 134, "title": "Thinking Together: The importance of human collaboration (in an AI world)", "type": "Discussion" },
@@ -55,7 +55,7 @@
     {
       "id": "session-4",
       "label": "Session 4",
-      "time": "13:00–13:45",
+      "time": "15:00–15:45",
       "sessions": [
         { "number": 98,  "title": "The Ugly Cost of AI Adoption (clinic approach)", "type": "Discussion" },
         { "number": 10,  "title": "General Purpose Turmoil:", "type": "Talk", "note": "Titel endet mit Doppelpunkt — bitte prüfen" },
@@ -72,7 +72,7 @@
     {
       "id": "session-5",
       "label": "Session 5",
-      "time": "14:00–14:45",
+      "time": "16:00–16:45",
       "sessions": [
         { "number": 132, "title": "Shipwrecks & Sailors", "type": "Talk" },
         { "number": 94,  "title": "Sense Mapping™", "type": "Workshop" },
@@ -89,7 +89,7 @@
     {
       "id": "session-6",
       "label": "Session 6",
-      "time": "15:00–15:45",
+      "time": "17:00–17:45",
       "sessions": [
         { "number": 36,  "title": "Agentic Experience Design", "type": "Talk" },
         { "number": 136, "title": "Resonate with strangers", "type": "Workshop" },

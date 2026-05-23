@@ -2,14 +2,18 @@ services:
   matchmaking:
     build: .
     container_name: uxcamp-matchmaking
-    ports:
-      - "3000:3000"
     volumes:
       - uxcamp-data:/data
     restart: unless-stopped
     environment:
       - NODE_ENV=production
       - DATA_DIR=/data
+    networks:
+      - public_proxymanager
 
 volumes:
   uxcamp-data:
+
+networks:
+  public_proxymanager:
+    external: true

@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UXcamp Europe 2026 · Sessions</title>
+  <style>
+    :root {
+      --primary: #1d4ed8;
+      --primary-light: #dbeafe;
+      --primary-dark: #1e40af;
+      --success: #15803d;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --sel-bg: #eff6ff;
+      --sel-border: #3b82f6;
+      --r: 12px;
+      --rs: 8px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; font-size: 15px; line-height: 1.5;
+    }
+
+    /* ── Header ─────────────────────────────────── */
+    .header { background: var(--card); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+    .hdr-inner { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; max-width: 900px; margin: 0 auto; }
+    .brand { font-size: 15px; font-weight: 800; color: var(--primary); letter-spacing: -.3px; }
+    .hdr-right { display: flex; align-items: center; gap: 8px; }
+    .avatar { width: 30px; height: 30px; background: var(--primary-light); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; flex-shrink: 0; }
+    .hdr-name { font-size: 13px; font-weight: 600; }
+    .btn-ghost { background: none; border: none; color: var(--muted); font-size: 13px; cursor: pointer; padding: 4px 8px; border-radius: 6px; font-family: inherit; }
+    .btn-ghost:hover { background: var(--bg); color: var(--text); }
+
+    /* ── Tabs ────────────────────────────────────── */
+    .tabs { display: flex; padding: 0 20px; max-width: 900px; margin: 0 auto; }
+    .tab { padding: 10px 16px; font-size: 14px; font-weight: 600; color: var(--muted); cursor: pointer; border: none; background: none; font-family: inherit; border-bottom: 2px solid transparent; transition: all .15s; display: flex; align-items: center; gap: 7px; }
+    .tab:hover { color: var(--text); }
+    .tab.on { color: var(--primary); border-bottom-color: var(--primary); }
+    .tab-badge { background: var(--primary-light); color: var(--primary); font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 10px; }
+
+    /* ── Main ────────────────────────────────────── */
+    .main { max-width: 900px; margin: 0 auto; padding: 24px 20px 120px; width: 100%; }
+    .view { display: none; }
+    .view.on { display: block; }
+
+    /* ── Search — flex container, no absolute positioning ── */
+    .search-wrap {
+      display: flex; align-items: center;
+      border: 1.5px solid var(--border); border-radius: var(--rs);
+      background: var(--card); margin-bottom: 28px;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .search-wrap:focus-within { border-color: var(--sel-border); box-shadow: 0 0 0 3px rgba(59,130,246,.15); }
+    .search-icon { flex-shrink: 0; display: flex; align-items: center; padding: 0 10px 0 14px; color: var(--muted); pointer-events: none; }
+    .search-in { flex: 1; min-width: 0; padding: 10px 6px; border: none; background: transparent; font-size: 15px; font-family: inherit; color: var(--text); outline: none; }
+    .search-in::placeholder { color: #94a3b8; }
+    .search-clear { flex-shrink: 0; background: none; border: none; color: var(--muted); cursor: pointer; padding: 0 12px; font-size: 15px; line-height: 1; display: none; align-items: center; align-self: stretch; }
+    .search-clear.on { display: flex; }
+    .search-clear:hover { color: var(--text); }
+
+    /* ── Timeslots ───────────────────────────────── */
+    .timeslot { margin-bottom: 28px; }
+    .timeslot.hide { display: none; }
+    .slot-hdr { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+    .slot-lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); }
+    .slot-time { font-size: 15px; font-weight: 700; }
+    .slot-cnt { margin-left: auto; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 10px; }
+    .slot-cnt.has { background: var(--primary-light); color: var(--primary); }
+    .slot-cnt.none { background: var(--bg); color: var(--muted); }
+
+    /* ── Session List ────────────────────────────── */
+    .slist { border: 1.5px solid var(--border); border-radius: var(--rs); overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+    .li-row { display: flex; align-items: center; gap: 12px; padding: 11px 14px; cursor: pointer; background: var(--card); transition: background .1s; user-select: none; -webkit-tap-highlight-color: transparent; }
+    .li-row:not(.hide) + .li-row:not(.hide) { border-top: 1px solid var(--border); }
+    .li-row:hover:not(.sel) { background: #f8fafc; }
+    .li-row.sel { background: var(--sel-bg); }
+    .li-row.hide { display: none; }
+    .li-chk { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #cbd5e1; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all .12s; }
+    .li-row.sel .li-chk { background: var(--primary); border-color: var(--primary); }
+    .chk-svg { display: none; }
+    .li-row.sel .chk-svg { display: block; }
+    .li-num { font-size: 12px; font-weight: 700; color: var(--muted); width: 34px; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+    .li-row.sel .li-num { color: var(--primary); }
+    .li-badge { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 5px; text-transform: uppercase; letter-spacing: .3px; white-space: nowrap; flex-shrink: 0; }
+    .bt { background: #dbeafe; color: #1d4ed8; }
+    .bd { background: #fef3c7; color: #92400e; }
+    .bw { background: #d1fae5; color: #065f46; }
+    .li-title { font-size: 14px; line-height: 1.35; color: var(--text); flex: 1; }
+    .li-row.sel .li-title { font-weight: 600; }
+    .no-results { text-align: center; padding: 60px 20px; color: var(--muted); display: none; }
+    .no-results.on { display: block; }
+
+    /* ── Bottom Bar ──────────────────────────────── */
+    .bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); border-top: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; z-index: 50; box-shadow: 0 -4px 16px rgba(0,0,0,.07); }
+    .bar-info { display: flex; flex-direction: column; }
+    .bar-count { font-size: 16px; font-weight: 700; }
+    .bar-hint { font-size: 12px; color: var(--muted); }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 10px 20px; border-radius: var(--rs); font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer; border: none; outline: none; transition: all .15s; white-space: nowrap; flex-shrink: 0; }
+    .btn:disabled { opacity: .45; cursor: default; }
+    .btn-save { background: var(--success); color: #fff; padding: 10px 24px; }
+    .btn-save:hover:not(:disabled) { background: #166534; }
+    .btn-muted { background: var(--bg); color: var(--muted); border: 1.5px solid var(--border); padding: 9px 24px; }
+
+    /* ── Modals ──────────────────────────────────── */
+    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 300; padding: 24px; opacity: 0; pointer-events: none; transition: opacity .2s; }
+    .overlay.on { opacity: 1; pointer-events: all; }
+    .modal { background: var(--card); border-radius: var(--r); padding: 32px 28px; width: 100%; max-width: 420px; box-shadow: 0 20px 60px rgba(0,0,0,.2); transform: translateY(10px); transition: transform .2s; }
+    .overlay.on .modal { transform: translateY(0); }
+    .modal-title { font-size: 20px; font-weight: 800; letter-spacing: -.3px; margin-bottom: 6px; }
+    .modal-sub { font-size: 14px; color: var(--muted); margin-bottom: 24px; }
+    .fg { margin-bottom: 18px; }
+    label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+    label .opt { font-weight: 400; color: var(--muted); }
+    input[type="text"] { width: 100%; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: var(--rs); font-size: 15px; font-family: inherit; color: var(--text); background: var(--card); outline: none; transition: border-color .15s, box-shadow .15s; }
+    input[type="text"]:focus { border-color: var(--sel-border); box-shadow: 0 0 0 3px rgba(59,130,246,.15); }
+    input[type="text"]::placeholder { color: #94a3b8; }
+    .ferr { font-size: 13px; color: #dc2626; margin-top: 5px; display: none; }
+    .ferr.on { display: block; }
+    .modal-note { font-size: 12px; color: var(--muted); margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); }
+    .modal-note a { color: var(--primary); text-decoration: none; }
+    .modal-note a:hover { text-decoration: underline; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+    .btn-secondary { background: var(--bg); color: var(--text); border: 1.5px solid var(--border); padding: 9px 18px; }
+    .btn-secondary:hover { background: var(--border); }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: var(--primary-dark); }
+
+    /* Pick list (multi-account load) */
+    .pick-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 4px; }
+    .pick-card { border: 1.5px solid var(--border); border-radius: var(--rs); padding: 12px 14px; cursor: pointer; background: var(--card); transition: border-color .12s, background .12s; }
+    .pick-card:hover { border-color: #93c5fd; }
+    .pick-card.picked { border-color: var(--sel-border); background: var(--sel-bg); }
+    .pick-name { font-size: 14px; font-weight: 600; }
+    .pick-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    /* ── Toast ───────────────────────────────────── */
+    .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(12px); background: #1e293b; color: #fff; padding: 9px 20px; border-radius: 10px; font-size: 14px; font-weight: 500; opacity: 0; transition: all .25s; pointer-events: none; z-index: 400; white-space: nowrap; }
+    .toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── Matches ─────────────────────────────────── */
+    .mx-hdr { margin-bottom: 20px; }
+    .mx-title { font-size: 20px; font-weight: 800; letter-spacing: -.3px; margin-bottom: 4px; }
+    .mx-sub { font-size: 14px; color: var(--muted); }
+    .mx-toolbar { display: flex; justify-content: flex-end; margin-bottom: 16px; }
+    .btn-refresh { background: var(--card); border: 1.5px solid var(--border); color: var(--text); font-size: 13px; padding: 7px 14px; border-radius: var(--rs); cursor: pointer; font-family: inherit; font-weight: 500; }
+    .btn-refresh:hover { background: var(--bg); }
+    .mx-list { display: flex; flex-direction: column; gap: 10px; }
+    .mc { background: var(--card); border: 1.5px solid var(--border); border-radius: var(--r); padding: 16px 20px; display: flex; align-items: center; gap: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.07); transition: border-color .12s; }
+    .mc:hover { border-color: #93c5fd; }
+    .mc-rank { font-size: 17px; font-weight: 800; color: var(--muted); width: 28px; text-align: center; flex-shrink: 0; }
+    .mc-rank.hi { color: var(--primary); }
+    .mc-av { width: 40px; height: 40px; background: var(--primary-light); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0; }
+    .mc-info { flex: 1; min-width: 0; }
+    .mc-name { font-size: 15px; font-weight: 600; margin-bottom: 5px; }
+    .mc-bar-row { display: flex; align-items: center; gap: 10px; }
+    .bar-bg { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .bar-fill { height: 100%; background: var(--primary); border-radius: 3px; transition: width .5s ease; }
+    .mc-ov { font-size: 13px; font-weight: 600; color: var(--primary); white-space: nowrap; flex-shrink: 0; }
+    .mc-ov.zero { color: var(--muted); }
+    .mc-li { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); text-decoration: none; margin-top: 3px; }
+    .mc-li:hover { color: var(--primary); }
+    .gate { text-align: center; padding: 60px 20px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+    .loading { text-align: center; padding: 40px; color: var(--muted); font-size: 14px; }
+
+    /* ── Footer ──────────────────────────────────── */
+    .footer { text-align: center; padding: 24px 20px 8px; font-size: 12px; color: var(--muted); }
+    .footer a { color: var(--muted); text-decoration: none; }
+    .footer a:hover { color: var(--text); }
+
+    @media (max-width: 600px) {
+      .li-badge { display: none; }
+      .modal { padding: 24px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────── -->
+<header class="header">
+  <div class="hdr-inner">
+    <div class="brand">UXcamp Europe 2026</div>
+    <div class="hdr-right" id="hdrRight">
+      <button class="btn-ghost" onclick="openLoad()">Load my sessions</button>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab on" id="tA" onclick="switchTab('sessions')">
+      My Sessions <span class="tab-badge" id="tabBadge">0</span>
+    </button>
+    <button class="tab" id="tB" onclick="switchTab('matches')">Find Matches</button>
+  </div>
+</header>
+
+<!-- ── Main ────────────────────────────────────────── -->
+<main class="main">
+  <!-- Sessions view -->
+  <div class="view on" id="vSessions">
+    <div class="search-wrap">
+      <span class="search-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+      </span>
+      <input class="search-in" type="text" id="searchIn" placeholder="Search sessions…" oninput="onSearch(this.value)">
+      <button class="search-clear" id="srchClr" onclick="clearSearch()" aria-label="Clear search">✕</button>
+    </div>
+    <div id="slots"><div class="loading">Loading sessions…</div></div>
+    <div class="no-results" id="noRes">No sessions match your search.</div>
+    <div class="footer">
+      <a href="/legal.html#legal-notice">Legal Notice</a> ·
+      <a href="/legal.html#privacy">Privacy Policy</a>
+    </div>
+  </div>
+
+  <!-- Matches view -->
+  <div class="view" id="vMatches">
+    <div class="mx-hdr">
+      <div class="mx-title">Find Your People</div>
+      <div class="mx-sub" id="mxSub">Other participants who attended the same sessions</div>
+    </div>
+    <div class="mx-toolbar">
+      <button class="btn-refresh" onclick="loadMatches()">↻ Refresh</button>
+    </div>
+    <div id="mxList"><div class="loading">Loading…</div></div>
+    <div class="footer">
+      <a href="/legal.html#legal-notice">Legal Notice</a> ·
+      <a href="/legal.html#privacy">Privacy Policy</a>
+    </div>
+  </div>
+</main>
+
+<!-- ── Bottom Bar ───────────────────────────────────── -->
+<div class="bar">
+  <div class="bar-info">
+    <div class="bar-count"><span id="barN">0</span> sessions attended</div>
+    <div class="bar-hint" id="barHint">Tap the sessions you went to today</div>
+  </div>
+  <button class="btn btn-save" id="saveBtn" onclick="onSave()" disabled>Save</button>
+</div>
+
+<!-- ── Save Modal ───────────────────────────────────── -->
+<div class="overlay" id="saveOverlay" onclick="overlayClick(event,'saveOverlay')">
+  <div class="modal">
+    <div class="modal-title">Save your sessions</div>
+    <div class="modal-sub">Your name lets others find you as a match</div>
+    <form id="saveForm" novalidate>
+      <div class="fg">
+        <label for="sName">Name <span style="color:#dc2626">*</span></label>
+        <input type="text" id="sName" placeholder="e.g. Jane Doe" autocomplete="name">
+        <div class="ferr" id="sNameErr">Please enter your name.</div>
+      </div>
+      <div class="fg">
+        <label for="sLi">LinkedIn <span class="opt">(optional)</span></label>
+        <input type="text" id="sLi" placeholder="linkedin.com/in/yourname">
+      </div>
+      <div class="modal-note">
+        By saving, your name and session choices will be visible to other participants for matching purposes. All data is automatically deleted within 30 days after the event and will not be used for any other purpose. <a href="/legal.html#privacy" target="_blank">Privacy policy</a>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="closeOverlay('saveOverlay')">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="saveMdBtn">Save →</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── Load Modal (dynamic content) ────────────────── -->
+<div class="overlay" id="loadOverlay" onclick="overlayClick(event,'loadOverlay')">
+  <div class="modal" id="loadModal"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── State ─────────────────────────────────────────
+  let me     = null;          // { token, name, linkedin }
+  let picked = new Set();
+  let saved  = new Set();
+  let slots  = [];
+  let query  = '';
+
+  // Load-modal state
+  let loadResults  = [];
+  let loadPickIdx  = 0;
+  let loadStep     = 'search'; // 'search' | 'pick'
+
+  // ── API ───────────────────────────────────────────
+  const api = {
+    sessions:    ()  => fetch('/api/sessions').then(r => r.json()),
+    userByToken: t   => fetch(`/api/users/${enc(t)}`).then(r => r.ok ? r.json() : null),
+    usersByName: n   => fetch(`/api/users/search/${enc(n)}`).then(r => r.json()),
+    save:        d   => fetch('/api/users', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d) }).then(r => r.json()),
+    matches:     t   => fetch(`/api/matches/${enc(t)}`).then(r => r.json()),
+  };
+  const enc = s => encodeURIComponent(s);
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+  function timeAgo(dateStr) {
+    const d = new Date(dateStr.replace(' ', 'T') + 'Z');
+    const s = (Date.now() - d.getTime()) / 1000;
+    if (s < 60) return 'just now';
+    if (s < 3600) return Math.round(s / 60) + 'm ago';
+    if (s < 86400) return Math.round(s / 3600) + 'h ago';
+    return Math.round(s / 86400) + 'd ago';
+  }
+
+  // ── Boot ──────────────────────────────────────────
+  window.addEventListener('DOMContentLoaded', async () => {
+    const data = await api.sessions();
+    slots = data.timeslots;
+    renderSlots();
+
+    const token = localStorage.getItem('_token');
+    if (token) {
+      const user = await api.userByToken(token);
+      if (user) {
+        applyIdentity(user.token, user.name, user.linkedin, user.sessions, false);
+        toast(`Welcome back, ${user.name}!`);
+      } else {
+        localStorage.removeItem('_token');
+        localStorage.removeItem('_name');
+        localStorage.removeItem('_li');
+      }
+    }
+    updateBar();
+  });
+
+  function applyIdentity(token, name, linkedin, sessions = [], rerender = true) {
+    me = { token, name, linkedin };
+    localStorage.setItem('_token', token);
+    localStorage.setItem('_name', name);
+    localStorage.setItem('_li', linkedin || '');
+    picked.clear();
+    sessions.forEach(s => picked.add(s));
+    saved = new Set(picked);
+    updateHeader();
+    if (rerender) renderSlots();
+    updateBar();
+  }
+
+  function updateHeader() {
+    const el = document.getElementById('hdrRight');
+    if (me) {
+      const initials = me.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+      el.innerHTML = `
+        <div class="avatar">${esc(initials)}</div>
+        <span class="hdr-name">${esc(me.name)}</span>
+        <button class="btn-ghost" onclick="changeIdentity()" title="Switch user">↺</button>`;
+    } else {
+      el.innerHTML = `<button class="btn-ghost" onclick="openLoad()">Load my sessions</button>`;
+    }
+  }
+
+  function changeIdentity() {
+    me = null; picked.clear(); saved.clear();
+    localStorage.removeItem('_token');
+    localStorage.removeItem('_name');
+    localStorage.removeItem('_li');
+    updateHeader(); renderSlots(); updateBar();
+    toast('Signed out');
+  }
+
+  // ── Sessions ──────────────────────────────────────
+  function renderSlots() {
+    const q = query.toLowerCase();
+    let anyVisible = false;
+
+    document.getElementById('slots').innerHTML = slots.map(slot => {
+      const visible = slot.sessions.filter(s =>
+        !q || s.title.toLowerCase().includes(q) || String(s.number).includes(q) || s.type.toLowerCase().includes(q)
+      );
+      if (visible.length) anyVisible = true;
+      const n = slot.sessions.filter(s => picked.has(s.number)).length;
+
+      return `<div class="timeslot${visible.length === 0 && q ? ' hide' : ''}" id="slot-${slot.id}">
+        <div class="slot-hdr">
+          <span class="slot-lbl">${slot.label}</span>
+          <span class="slot-time">${slot.time}</span>
+          <span class="slot-cnt ${n > 0 ? 'has' : 'none'}" id="cnt-${slot.id}">${n > 0 ? n + ' attended' : '–'}</span>
+        </div>
+        <div class="slist">
+          ${slot.sessions.map(s => row(s, q && !visible.includes(s))).join('')}
+        </div>
+      </div>`;
+    }).join('');
+
+    document.getElementById('noRes').classList.toggle('on', !anyVisible && !!q);
+  }
+
+  function row(s, hidden) {
+    const sel = picked.has(s.number);
+    const bc = s.type === 'Talk' ? 'bt' : s.type === 'Workshop' ? 'bw' : 'bd';
+    return `<div class="li-row${sel ? ' sel' : ''}${hidden ? ' hide' : ''}" id="c-${s.number}"
+        onclick="toggle(${s.number})" role="checkbox" aria-checked="${sel}" tabindex="0"
+        onkeydown="if(event.key===' '||event.key==='Enter'){event.preventDefault();toggle(${s.number})}">
+      <div class="li-chk">
+        <svg class="chk-svg" width="10" height="8" viewBox="0 0 10 8" fill="none"
+             stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="1,4 3.5,7 9,1"/>
+        </svg>
+      </div>
+      <span class="li-num">#${s.number}</span>
+      <span class="li-badge ${bc}">${esc(s.type)}</span>
+      <span class="li-title">${esc(s.title)}</span>
+    </div>`;
+  }
+
+  function toggle(num) {
+    const wasSelected = picked.has(num);
+    wasSelected ? picked.delete(num) : picked.add(num);
+
+    const el = document.getElementById(`c-${num}`);
+    if (el) {
+      el.classList.toggle('sel', !wasSelected);
+      el.setAttribute('aria-checked', !wasSelected);
+    }
+
+    // Auto-scroll to next timeslot on selection (not deselection, not during search)
+    if (!wasSelected && !query) {
+      const idx = slots.findIndex(s => s.sessions.some(sess => sess.number === num));
+      if (idx >= 0 && idx < slots.length - 1) {
+        const nextId = slots[idx + 1].id;
+        setTimeout(() => {
+          const nextEl = document.getElementById(`slot-${nextId}`);
+          if (!nextEl) return;
+          const hdrH = document.querySelector('.header').offsetHeight;
+          window.scrollTo({ top: nextEl.getBoundingClientRect().top + window.scrollY - hdrH - 12, behavior: 'smooth' });
+        }, 320);
+      }
+    }
+
+    updateSlotCounts();
+    updateBar();
+  }
+
+  function updateSlotCounts() {
+    document.getElementById('tabBadge').textContent = picked.size;
+    slots.forEach(slot => {
+      const n = slot.sessions.filter(s => picked.has(s.number)).length;
+      const el = document.getElementById(`cnt-${slot.id}`);
+      if (el) { el.textContent = n > 0 ? n + ' attended' : '–'; el.className = 'slot-cnt ' + (n > 0 ? 'has' : 'none'); }
+    });
+  }
+
+  function updateBar() {
+    const count = picked.size;
+    const dirty = !eqSets(picked, saved);
+    document.getElementById('barN').textContent = count;
+    document.getElementById('tabBadge').textContent = count;
+
+    const btn  = document.getElementById('saveBtn');
+    const hint = document.getElementById('barHint');
+
+    if (me && !dirty) {
+      btn.textContent = 'Saved ✓'; btn.disabled = true; btn.className = 'btn btn-muted';
+      hint.textContent = 'Your sessions are saved';
+    } else if (me && dirty) {
+      btn.textContent = 'Update'; btn.disabled = false; btn.className = 'btn btn-save';
+      hint.textContent = 'You have unsaved changes';
+    } else if (!me && count > 0) {
+      btn.textContent = 'Save my sessions →'; btn.disabled = false; btn.className = 'btn btn-save';
+      hint.textContent = 'Ready — save to find your session matches';
+    } else {
+      btn.textContent = 'Save'; btn.disabled = true; btn.className = 'btn btn-save';
+      hint.textContent = 'Tap the sessions you went to today';
+    }
+  }
+
+  const eqSets = (a, b) => a.size === b.size && [...a].every(x => b.has(x));
+
+  // ── Save flow ─────────────────────────────────────
+  async function onSave() {
+    if (me) { await persist(me.name, me.linkedin); return; }
+    openOverlay('saveOverlay');
+    setTimeout(() => document.getElementById('sName').focus(), 50);
+  }
+
+  document.getElementById('saveForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const name = document.getElementById('sName').value.trim();
+    const li   = document.getElementById('sLi').value.trim();
+    const err  = document.getElementById('sNameErr');
+    if (!name) { err.classList.add('on'); return; }
+    err.classList.remove('on');
+
+    const btn = document.getElementById('saveMdBtn');
+    btn.disabled = true; btn.textContent = '…';
+    await persist(name, li);
+    closeOverlay('saveOverlay');
+    btn.disabled = false; btn.textContent = 'Save →';
+  });
+
+  async function persist(name, linkedin) {
+    try {
+      const result = await api.save({ token: me?.token ?? null, name, linkedin, sessions: [...picked] });
+      me = { token: result.token, name: result.name, linkedin: result.linkedin };
+      saved = new Set(picked);
+      localStorage.setItem('_token', me.token);
+      localStorage.setItem('_name', me.name);
+      localStorage.setItem('_li', me.linkedin);
+      updateHeader(); updateBar();
+      toast('Sessions saved!');
+    } catch {
+      toast('Save failed — please try again.');
+    }
+  }
+
+  // ── Load flow (multi-step) ────────────────────────
+  function openLoad() {
+    loadStep = 'search'; loadResults = []; loadPickIdx = 0;
+    renderLoadModal();
+    openOverlay('loadOverlay');
+    setTimeout(() => document.getElementById('lName')?.focus(), 50);
+  }
+
+  function renderLoadModal() {
+    const modal = document.getElementById('loadModal');
+    if (loadStep === 'search') {
+      modal.innerHTML = `
+        <div class="modal-title">Load your sessions</div>
+        <div class="modal-sub">Enter the name you used to save your schedule</div>
+        <form id="loadForm" novalidate>
+          <div class="fg">
+            <label for="lName">Name</label>
+            <input type="text" id="lName" placeholder="e.g. Jane Doe" autocomplete="name">
+            <div class="ferr" id="lErr"></div>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" onclick="closeOverlay('loadOverlay')">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="loadMdBtn">Search →</button>
+          </div>
+        </form>`;
+      document.getElementById('loadForm').addEventListener('submit', handleLoadSearch);
+    } else {
+      modal.innerHTML = `
+        <div class="modal-title">Which one are you?</div>
+        <div class="modal-sub">Found ${loadResults.length} accounts with this name — pick yours</div>
+        <div class="pick-list">
+          ${loadResults.map((u, i) => `
+            <div class="pick-card${i === 0 ? ' picked' : ''}" onclick="selectPick(${i})">
+              <div class="pick-name">${esc(u.name)}</div>
+              <div class="pick-meta">${u.sessions.length} session${u.sessions.length !== 1 ? 's' : ''} · saved ${timeAgo(u.updated_at)}</div>
+            </div>`).join('')}
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="backToSearch()">← Back</button>
+          <button type="button" class="btn btn-primary" id="pickBtn" onclick="confirmPick()">Load →</button>
+        </div>`;
+    }
+  }
+
+  async function handleLoadSearch(e) {
+    e.preventDefault();
+    const name = document.getElementById('lName').value.trim();
+    const err  = document.getElementById('lErr');
+    if (!name) { err.textContent = 'Please enter a name.'; err.classList.add('on'); return; }
+
+    const btn = document.getElementById('loadMdBtn');
+    btn.disabled = true; btn.textContent = '…';
+
+    const results = await api.usersByName(name);
+    btn.disabled = false; btn.textContent = 'Search →';
+
+    if (results.length === 0) {
+      err.textContent = 'No saved sessions found for that name.';
+      err.classList.add('on');
+      return;
+    }
+
+    if (results.length === 1) {
+      closeOverlay('loadOverlay');
+      applyIdentity(results[0].token, results[0].name, results[0].linkedin, results[0].sessions);
+      const n = results[0].sessions.length;
+      toast(`Loaded ${n} session${n !== 1 ? 's' : ''}`);
+      return;
+    }
+
+    // Multiple accounts with that name — show picker
+    loadResults = results;
+    loadPickIdx = 0;
+    loadStep = 'pick';
+    renderLoadModal();
+  }
+
+  function selectPick(idx) {
+    loadPickIdx = idx;
+    document.querySelectorAll('.pick-card').forEach((el, i) => el.classList.toggle('picked', i === idx));
+  }
+
+  function backToSearch() {
+    loadStep = 'search';
+    renderLoadModal();
+    setTimeout(() => document.getElementById('lName')?.focus(), 50);
+  }
+
+  function confirmPick() {
+    const u = loadResults[loadPickIdx];
+    closeOverlay('loadOverlay');
+    applyIdentity(u.token, u.name, u.linkedin, u.sessions);
+    const n = u.sessions.length;
+    toast(`Loaded ${n} session${n !== 1 ? 's' : ''}`);
+  }
+
+  // ── Search ────────────────────────────────────────
+  function onSearch(v) {
+    query = v;
+    document.getElementById('srchClr').classList.toggle('on', !!v);
+    renderSlots();
+  }
+
+  function clearSearch() {
+    document.getElementById('searchIn').value = '';
+    onSearch('');
+    document.getElementById('searchIn').focus();
+  }
+
+  // ── Tabs ──────────────────────────────────────────
+  function switchTab(tab) {
+    document.getElementById('tA').classList.toggle('on', tab === 'sessions');
+    document.getElementById('tB').classList.toggle('on', tab === 'matches');
+    document.getElementById('vSessions').classList.toggle('on', tab === 'sessions');
+    document.getElementById('vMatches').classList.toggle('on', tab === 'matches');
+    document.querySelector('.bar').style.display = tab === 'sessions' ? 'flex' : 'none';
+    if (tab === 'matches') loadMatches();
+  }
+
+  // ── Matches ───────────────────────────────────────
+  async function loadMatches() {
+    const container = document.getElementById('mxList');
+    if (!me) {
+      container.innerHTML = `<div class="gate">
+        <div style="font-size:44px">🔖</div>
+        <div style="font-size:18px;font-weight:700">Save your sessions first</div>
+        <div style="font-size:14px;color:var(--muted);max-width:300px">Mark the sessions you attended and save your schedule to find people to connect with.</div>
+        <button class="btn btn-primary" onclick="switchTab('sessions')">Back to sessions</button>
+      </div>`;
+      document.getElementById('mxSub').textContent = 'Save your sessions to unlock matching';
+      return;
+    }
+    container.innerHTML = '<div class="loading">Loading…</div>';
+    try { renderMatches(await api.matches(me.token)); }
+    catch { container.innerHTML = '<div class="loading">Could not load matches.</div>'; }
+  }
+
+  function renderMatches(list) {
+    const n = picked.size;
+    document.getElementById('mxSub').textContent = n > 0
+      ? `Based on your ${n} attended session${n !== 1 ? 's' : ''}`
+      : 'Select sessions to improve match accuracy';
+
+    if (!list.length) {
+      document.getElementById('mxList').innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--muted)">
+        <div style="font-size:48px;margin-bottom:16px">👥</div>
+        <div style="font-size:16px;font-weight:700;margin-bottom:6px">No other participants yet</div>
+        <div style="font-size:14px">Share the app URL so others can log their sessions!</div>
+      </div>`;
+      return;
+    }
+
+    const maxO = list[0]?.overlap || 1;
+    document.getElementById('mxList').innerHTML =
+      `<div class="mx-list">${list.map((m, i) => matchCard(m, i + 1, maxO)).join('')}</div>`;
+  }
+
+  function matchCard(m, rank, maxO) {
+    const hi = rank <= 3 && m.overlap > 0;
+    const w  = maxO > 0 ? Math.round((m.overlap / maxO) * 100) : 0;
+    const initials = m.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+    let href = m.linkedin;
+    if (href && !href.startsWith('http')) href = 'https://' + href;
+    return `<div class="mc">
+      <div class="mc-rank${hi ? ' hi' : ''}">${rank}</div>
+      <div class="mc-av">${esc(initials)}</div>
+      <div class="mc-info">
+        <div class="mc-name">${esc(m.name)}</div>
+        <div class="mc-bar-row">
+          <div class="bar-bg"><div class="bar-fill" style="width:${w}%"></div></div>
+          <div class="mc-ov${m.overlap === 0 ? ' zero' : ''}">${m.overlap} in common</div>
+        </div>
+        ${m.linkedin ? `<a href="${esc(href)}" target="_blank" rel="noopener" class="mc-li">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+          ${esc(m.linkedin)}</a>` : ''}
+      </div>
+    </div>`;
+  }
+
+  // ── Overlay helpers ───────────────────────────────
+  function openOverlay(id)  { document.getElementById(id).classList.add('on'); }
+  function closeOverlay(id) { document.getElementById(id).classList.remove('on'); }
+  function overlayClick(e, id) { if (e.target === e.currentTarget) closeOverlay(id); }
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closeOverlay('saveOverlay'); closeOverlay('loadOverlay'); }
+  });
+
+  // ── Toast ─────────────────────────────────────────
+  function toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('on');
+    setTimeout(() => el.classList.remove('on'), 2500);
+  }
+</script>
+</body>
+</html>

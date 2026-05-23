@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>UXcamp Europe 2026 · Sessions</title>
+  <title>#uxce26 Matchmaker</title>
   <style>
     :root {
       --primary: #1d4ed8;
@@ -85,13 +85,15 @@
     .li-row.sel .li-chk { background: var(--primary); border-color: var(--primary); }
     .chk-svg { display: none; }
     .li-row.sel .chk-svg { display: block; }
-    .li-num { font-size: 12px; font-weight: 700; color: var(--muted); width: 34px; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+    .li-content { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+    .li-meta { display: flex; align-items: center; gap: 6px; }
+    .li-num { font-size: 12px; font-weight: 700; color: var(--muted); flex-shrink: 0; font-variant-numeric: tabular-nums; }
     .li-row.sel .li-num { color: var(--primary); }
     .li-badge { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 5px; text-transform: uppercase; letter-spacing: .3px; white-space: nowrap; flex-shrink: 0; }
     .bt { background: #dbeafe; color: #1d4ed8; }
     .bd { background: #fef3c7; color: #92400e; }
     .bw { background: #d1fae5; color: #065f46; }
-    .li-title { font-size: 14px; line-height: 1.35; color: var(--text); flex: 1; }
+    .li-title { font-size: 14px; line-height: 1.35; color: var(--text); }
     .li-row.sel .li-title { font-weight: 600; }
     .no-results { text-align: center; padding: 60px 20px; color: var(--muted); display: none; }
     .no-results.on { display: block; }
@@ -192,7 +194,7 @@
 <!-- ── Header ──────────────────────────────────────── -->
 <header class="header">
   <div class="hdr-inner">
-    <a href="/" class="brand">UXcamp Europe 2026</a>
+    <a href="/" class="brand">#uxce26 Matchmaker</a>
     <div class="hdr-right" id="hdrRight"></div>
   </div>
   <div class="tabs">
@@ -220,7 +222,7 @@
     <div class="no-results" id="noRes">No sessions match your search.</div>
     <div class="footer">
       <a href="/legal.html#legal-notice">Legal Notice</a> ·
-      <a href="/legal.html#privacy">Privacy Policy</a>
+      <a href="/legal.html#privacy">Privacy Policy</a> · v0.0.0.0.42
     </div>
   </div>
 
@@ -236,7 +238,7 @@
     <div id="mxList"><div class="loading">Loading…</div></div>
     <div class="footer">
       <a href="/legal.html#legal-notice">Legal Notice</a> ·
-      <a href="/legal.html#privacy">Privacy Policy</a>
+      <a href="/legal.html#privacy">Privacy Policy</a> · v0.0.0.0.42
     </div>
   </div>
 </main>
@@ -349,11 +351,19 @@
     if (me) {
       const initials = me.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
       el.innerHTML = `
-        <div class="avatar">${esc(initials)}</div>
-        <span class="hdr-name">${esc(me.name)}</span>`;
+        <div class="avatar" onclick="editProfile()" style="cursor:pointer">${esc(initials)}</div>
+        <span class="hdr-name" onclick="editProfile()" style="cursor:pointer">${esc(me.name)}</span>`;
     } else {
       el.innerHTML = '';
     }
+  }
+
+  function editProfile() {
+    document.getElementById('sName').value = me.name;
+    document.getElementById('sLi').value = me.linkedin || '';
+    document.getElementById('saveMdBtn').textContent = 'Update →';
+    openOverlay('saveOverlay');
+    setTimeout(() => document.getElementById('sName').focus(), 50);
   }
 
   // ── Sessions ──────────────────────────────────────
@@ -395,9 +405,13 @@
           <polyline points="1,4 3.5,7 9,1"/>
         </svg>
       </div>
-      <span class="li-num">#${s.number}</span>
-      <span class="li-badge ${bc}">${esc(s.type)}</span>
-      <span class="li-title">${esc(s.title)}</span>
+      <div class="li-content">
+        <span class="li-title">${esc(s.title)}</span>
+        <div class="li-meta">
+          <span class="li-num">#${s.number}</span>
+          <span class="li-badge ${bc}">${esc(s.type)}</span>
+        </div>
+      </div>
     </div>`;
   }
 
@@ -498,6 +512,7 @@
       localStorage.setItem('_picked', JSON.stringify([...picked]));
       updateHeader(); updateBar();
       toast('Sessions saved!');
+      switchTab('matches');
     } catch {
       toast('Save failed — please try again.');
     }
@@ -564,18 +579,28 @@
       `<div class="mx-list">${list.map((m, i) => matchCard(m, i + 1, maxO)).join('')}</div>`;
   }
 
+  function linkedinHtml(li) {
+    if (!li) return '';
+    const isUrl = /^https?:\/\//i.test(li) || /^www\./i.test(li) || /linkedin\.com/i.test(li) || /^[^\s]+\.[^\s]+\//.test(li);
+    if (isUrl) {
+      const href = li.startsWith('http') ? li : 'https://' + li;
+      return `<a href="${esc(href)}" target="_blank" rel="noopener" class="mc-li" onclick="event.stopPropagation()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+        WWW</a>`;
+    }
+    return `<span class="mc-li">${esc(li)}</span>`;
+  }
+
   function matchCard(m, rank, maxO) {
     const hi = rank <= 3 && m.overlap > 0;
     const w  = maxO > 0 ? Math.round((m.overlap / maxO) * 100) : 0;
     const initials = m.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
-    let href = m.linkedin;
-    if (href && !href.startsWith('http')) href = 'https://' + href;
     const orderedSessions = getSessionsInOrder(m.sessions || []);
     const commonSet = new Set(m.commonSessions || []);
-    const sessionsHtml = orderedSessions.map(s => {
+    const sessionsHtml = orderedSessions.map(({ session: s, slot }) => {
       const isCommon = commonSet.has(s.number);
       return `<div class="mc-sess-row${isCommon ? ' mc-sess-common' : ''}">
-        <span class="mc-sess-num">#${s.number}</span>
+        <span class="mc-sess-num">${esc(slot.time)}</span>
         <span>${esc(s.title)}</span>
       </div>`;
     }).join('');
@@ -589,9 +614,7 @@
             <div class="bar-bg"><div class="bar-fill" style="width:${w}%"></div></div>
             <div class="mc-ov${m.overlap === 0 ? ' zero' : ''}">${m.overlap} in common</div>
           </div>
-          ${m.linkedin ? `<a href="${esc(href)}" target="_blank" rel="noopener" class="mc-li" onclick="event.stopPropagation()">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
-            ${esc(m.linkedin)}</a>` : ''}
+          ${linkedinHtml(m.linkedin)}
         </div>
         ${sessionsHtml ? '<div class="mc-chevron">›</div>' : ''}
       </div>
@@ -604,7 +627,7 @@
     const result = [];
     for (const slot of slots) {
       for (const s of slot.sessions) {
-        if (numSet.has(s.number)) result.push(s);
+        if (numSet.has(s.number)) result.push({ session: s, slot });
       }
     }
     return result;
@@ -616,7 +639,10 @@
 
   // ── Overlay helpers ───────────────────────────────
   function openOverlay(id)  { document.getElementById(id).classList.add('on'); }
-  function closeOverlay(id) { document.getElementById(id).classList.remove('on'); }
+  function closeOverlay(id) {
+    document.getElementById(id).classList.remove('on');
+    if (id === 'saveOverlay') document.getElementById('saveMdBtn').textContent = 'Save →';
+  }
   function overlayClick(e, id) { if (e.target === e.currentTarget) closeOverlay(id); }
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') { closeOverlay('saveOverlay'); }

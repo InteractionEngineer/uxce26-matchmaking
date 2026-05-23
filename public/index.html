@@ -30,7 +30,7 @@
     /* ── Header ─────────────────────────────────── */
     .header { background: var(--card); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
     .hdr-inner { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; max-width: 900px; margin: 0 auto; }
-    .brand { font-size: 15px; font-weight: 800; color: var(--primary); letter-spacing: -.3px; }
+    .brand { font-size: 15px; font-weight: 800; color: var(--primary); letter-spacing: -.3px; text-decoration: none; }
     .hdr-right { display: flex; align-items: center; gap: 8px; }
     .avatar { width: 30px; height: 30px; background: var(--primary-light); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; flex-shrink: 0; }
     .hdr-name { font-size: 13px; font-weight: 600; }
@@ -151,8 +151,9 @@
     .btn-refresh { background: var(--card); border: 1.5px solid var(--border); color: var(--text); font-size: 13px; padding: 7px 14px; border-radius: var(--rs); cursor: pointer; font-family: inherit; font-weight: 500; }
     .btn-refresh:hover { background: var(--bg); }
     .mx-list { display: flex; flex-direction: column; gap: 10px; }
-    .mc { background: var(--card); border: 1.5px solid var(--border); border-radius: var(--r); padding: 16px 20px; display: flex; align-items: center; gap: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.07); transition: border-color .12s; }
+    .mc { background: var(--card); border: 1.5px solid var(--border); border-radius: var(--r); overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.07); transition: border-color .12s; cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; }
     .mc:hover { border-color: #93c5fd; }
+    .mc-main { display: flex; align-items: center; gap: 14px; padding: 16px 20px; }
     .mc-rank { font-size: 17px; font-weight: 800; color: var(--muted); width: 28px; text-align: center; flex-shrink: 0; }
     .mc-rank.hi { color: var(--primary); }
     .mc-av { width: 40px; height: 40px; background: var(--primary-light); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0; }
@@ -165,6 +166,14 @@
     .mc-ov.zero { color: var(--muted); }
     .mc-li { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); text-decoration: none; margin-top: 3px; }
     .mc-li:hover { color: var(--primary); }
+    .mc-chevron { color: var(--muted); font-size: 20px; flex-shrink: 0; line-height: 1; transition: transform .2s; padding-left: 4px; }
+    .mc.open .mc-chevron { transform: rotate(90deg); }
+    .mc-sessions { display: none; border-top: 1px solid var(--border); padding: 8px 20px 12px; }
+    .mc.open .mc-sessions { display: block; }
+    .mc-sess-row { display: flex; align-items: baseline; gap: 8px; padding: 3px 0; font-size: 13px; color: var(--muted); }
+    .mc-sess-num { font-size: 11px; font-weight: 700; min-width: 32px; flex-shrink: 0; }
+    .mc-sess-common { color: var(--text); font-weight: 600; }
+    .mc-sess-common .mc-sess-num { color: var(--primary); }
     .gate { text-align: center; padding: 60px 20px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
     .loading { text-align: center; padding: 40px; color: var(--muted); font-size: 14px; }
 
@@ -174,7 +183,6 @@
     .footer a:hover { color: var(--text); }
 
     @media (max-width: 600px) {
-      .li-badge { display: none; }
       .modal { padding: 24px 20px; }
     }
   </style>
@@ -184,10 +192,8 @@
 <!-- ── Header ──────────────────────────────────────── -->
 <header class="header">
   <div class="hdr-inner">
-    <div class="brand">UXcamp Europe 2026</div>
-    <div class="hdr-right" id="hdrRight">
-      <button class="btn-ghost" onclick="openLoad()">Load my sessions</button>
-    </div>
+    <a href="/" class="brand">UXcamp Europe 2026</a>
+    <div class="hdr-right" id="hdrRight"></div>
   </div>
   <div class="tabs">
     <button class="tab on" id="tA" onclick="switchTab('sessions')">
@@ -260,7 +266,7 @@
         <input type="text" id="sLi" placeholder="linkedin.com/in/yourname">
       </div>
       <div class="modal-note">
-        By saving, your name and session choices will be visible to other participants for matching purposes. All data is automatically deleted within 30 days after the event and will not be used for any other purpose. <a href="/legal.html#privacy" target="_blank">Privacy policy</a>
+        By saving, your name and session choices will be visible to other participants for matching purposes. All data is automatically deleted within 30 days after the event and will not be used for any other purpose.
       </div>
       <div class="modal-actions">
         <button type="button" class="btn btn-secondary" onclick="closeOverlay('saveOverlay')">Cancel</button>
@@ -268,11 +274,6 @@
       </div>
     </form>
   </div>
-</div>
-
-<!-- ── Load Modal (dynamic content) ────────────────── -->
-<div class="overlay" id="loadOverlay" onclick="overlayClick(event,'loadOverlay')">
-  <div class="modal" id="loadModal"></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -284,11 +285,6 @@
   let saved  = new Set();
   let slots  = [];
   let query  = '';
-
-  // Load-modal state
-  let loadResults  = [];
-  let loadPickIdx  = 0;
-  let loadStep     = 'search'; // 'search' | 'pick'
 
   // ── API ───────────────────────────────────────────
   const api = {
@@ -312,15 +308,19 @@
 
   // ── Boot ──────────────────────────────────────────
   window.addEventListener('DOMContentLoaded', async () => {
+    const stored = localStorage.getItem('_picked');
+    if (stored) { try { JSON.parse(stored).forEach(s => picked.add(s)); } catch(e) {} }
+
     const data = await api.sessions();
     slots = data.timeslots;
     renderSlots();
+    updateBar();
 
     const token = localStorage.getItem('_token');
     if (token) {
       const user = await api.userByToken(token);
       if (user) {
-        applyIdentity(user.token, user.name, user.linkedin, user.sessions, false);
+        applyIdentity(user.token, user.name, user.linkedin, user.sessions);
         toast(`Welcome back, ${user.name}!`);
       } else {
         localStorage.removeItem('_token');
@@ -328,10 +328,9 @@
         localStorage.removeItem('_li');
       }
     }
-    updateBar();
   });
 
-  function applyIdentity(token, name, linkedin, sessions = [], rerender = true) {
+  function applyIdentity(token, name, linkedin, sessions = []) {
     me = { token, name, linkedin };
     localStorage.setItem('_token', token);
     localStorage.setItem('_name', name);
@@ -339,8 +338,9 @@
     picked.clear();
     sessions.forEach(s => picked.add(s));
     saved = new Set(picked);
+    localStorage.setItem('_picked', JSON.stringify([...picked]));
     updateHeader();
-    if (rerender) renderSlots();
+    renderSlots();
     updateBar();
   }
 
@@ -350,20 +350,10 @@
       const initials = me.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
       el.innerHTML = `
         <div class="avatar">${esc(initials)}</div>
-        <span class="hdr-name">${esc(me.name)}</span>
-        <button class="btn-ghost" onclick="changeIdentity()" title="Switch user">↺</button>`;
+        <span class="hdr-name">${esc(me.name)}</span>`;
     } else {
-      el.innerHTML = `<button class="btn-ghost" onclick="openLoad()">Load my sessions</button>`;
+      el.innerHTML = '';
     }
-  }
-
-  function changeIdentity() {
-    me = null; picked.clear(); saved.clear();
-    localStorage.removeItem('_token');
-    localStorage.removeItem('_name');
-    localStorage.removeItem('_li');
-    updateHeader(); renderSlots(); updateBar();
-    toast('Signed out');
   }
 
   // ── Sessions ──────────────────────────────────────
@@ -414,6 +404,7 @@
   function toggle(num) {
     const wasSelected = picked.has(num);
     wasSelected ? picked.delete(num) : picked.add(num);
+    localStorage.setItem('_picked', JSON.stringify([...picked]));
 
     const el = document.getElementById(`c-${num}`);
     if (el) {
@@ -504,107 +495,12 @@
       localStorage.setItem('_token', me.token);
       localStorage.setItem('_name', me.name);
       localStorage.setItem('_li', me.linkedin);
+      localStorage.setItem('_picked', JSON.stringify([...picked]));
       updateHeader(); updateBar();
       toast('Sessions saved!');
     } catch {
       toast('Save failed — please try again.');
     }
-  }
-
-  // ── Load flow (multi-step) ────────────────────────
-  function openLoad() {
-    loadStep = 'search'; loadResults = []; loadPickIdx = 0;
-    renderLoadModal();
-    openOverlay('loadOverlay');
-    setTimeout(() => document.getElementById('lName')?.focus(), 50);
-  }
-
-  function renderLoadModal() {
-    const modal = document.getElementById('loadModal');
-    if (loadStep === 'search') {
-      modal.innerHTML = `
-        <div class="modal-title">Load your sessions</div>
-        <div class="modal-sub">Enter the name you used to save your schedule</div>
-        <form id="loadForm" novalidate>
-          <div class="fg">
-            <label for="lName">Name</label>
-            <input type="text" id="lName" placeholder="e.g. Jane Doe" autocomplete="name">
-            <div class="ferr" id="lErr"></div>
-          </div>
-          <div class="modal-actions">
-            <button type="button" class="btn btn-secondary" onclick="closeOverlay('loadOverlay')">Cancel</button>
-            <button type="submit" class="btn btn-primary" id="loadMdBtn">Search →</button>
-          </div>
-        </form>`;
-      document.getElementById('loadForm').addEventListener('submit', handleLoadSearch);
-    } else {
-      modal.innerHTML = `
-        <div class="modal-title">Which one are you?</div>
-        <div class="modal-sub">Found ${loadResults.length} accounts with this name — pick yours</div>
-        <div class="pick-list">
-          ${loadResults.map((u, i) => `
-            <div class="pick-card${i === 0 ? ' picked' : ''}" onclick="selectPick(${i})">
-              <div class="pick-name">${esc(u.name)}</div>
-              <div class="pick-meta">${u.sessions.length} session${u.sessions.length !== 1 ? 's' : ''} · saved ${timeAgo(u.updated_at)}</div>
-            </div>`).join('')}
-        </div>
-        <div class="modal-actions">
-          <button type="button" class="btn btn-secondary" onclick="backToSearch()">← Back</button>
-          <button type="button" class="btn btn-primary" id="pickBtn" onclick="confirmPick()">Load →</button>
-        </div>`;
-    }
-  }
-
-  async function handleLoadSearch(e) {
-    e.preventDefault();
-    const name = document.getElementById('lName').value.trim();
-    const err  = document.getElementById('lErr');
-    if (!name) { err.textContent = 'Please enter a name.'; err.classList.add('on'); return; }
-
-    const btn = document.getElementById('loadMdBtn');
-    btn.disabled = true; btn.textContent = '…';
-
-    const results = await api.usersByName(name);
-    btn.disabled = false; btn.textContent = 'Search →';
-
-    if (results.length === 0) {
-      err.textContent = 'No saved sessions found for that name.';
-      err.classList.add('on');
-      return;
-    }
-
-    if (results.length === 1) {
-      closeOverlay('loadOverlay');
-      applyIdentity(results[0].token, results[0].name, results[0].linkedin, results[0].sessions);
-      const n = results[0].sessions.length;
-      toast(`Loaded ${n} session${n !== 1 ? 's' : ''}`);
-      return;
-    }
-
-    // Multiple accounts with that name — show picker
-    loadResults = results;
-    loadPickIdx = 0;
-    loadStep = 'pick';
-    renderLoadModal();
-  }
-
-  function selectPick(idx) {
-    loadPickIdx = idx;
-    document.querySelectorAll('.pick-card').forEach((el, i) => el.classList.toggle('picked', i === idx));
-  }
-
-  function backToSearch() {
-    loadStep = 'search';
-    renderLoadModal();
-    setTimeout(() => document.getElementById('lName')?.focus(), 50);
-  }
-
-  function confirmPick() {
-    const u = loadResults[loadPickIdx];
-    closeOverlay('loadOverlay');
-    applyIdentity(u.token, u.name, u.linkedin, u.sessions);
-    const n = u.sessions.length;
-    toast(`Loaded ${n} session${n !== 1 ? 's' : ''}`);
   }
 
   // ── Search ────────────────────────────────────────
@@ -674,20 +570,48 @@
     const initials = m.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
     let href = m.linkedin;
     if (href && !href.startsWith('http')) href = 'https://' + href;
-    return `<div class="mc">
-      <div class="mc-rank${hi ? ' hi' : ''}">${rank}</div>
-      <div class="mc-av">${esc(initials)}</div>
-      <div class="mc-info">
-        <div class="mc-name">${esc(m.name)}</div>
-        <div class="mc-bar-row">
-          <div class="bar-bg"><div class="bar-fill" style="width:${w}%"></div></div>
-          <div class="mc-ov${m.overlap === 0 ? ' zero' : ''}">${m.overlap} in common</div>
+    const orderedSessions = getSessionsInOrder(m.sessions || []);
+    const commonSet = new Set(m.commonSessions || []);
+    const sessionsHtml = orderedSessions.map(s => {
+      const isCommon = commonSet.has(s.number);
+      return `<div class="mc-sess-row${isCommon ? ' mc-sess-common' : ''}">
+        <span class="mc-sess-num">#${s.number}</span>
+        <span>${esc(s.title)}</span>
+      </div>`;
+    }).join('');
+    return `<div class="mc" onclick="toggleMcSessions(this)">
+      <div class="mc-main">
+        <div class="mc-rank${hi ? ' hi' : ''}">${rank}</div>
+        <div class="mc-av">${esc(initials)}</div>
+        <div class="mc-info">
+          <div class="mc-name">${esc(m.name)}</div>
+          <div class="mc-bar-row">
+            <div class="bar-bg"><div class="bar-fill" style="width:${w}%"></div></div>
+            <div class="mc-ov${m.overlap === 0 ? ' zero' : ''}">${m.overlap} in common</div>
+          </div>
+          ${m.linkedin ? `<a href="${esc(href)}" target="_blank" rel="noopener" class="mc-li" onclick="event.stopPropagation()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+            ${esc(m.linkedin)}</a>` : ''}
         </div>
-        ${m.linkedin ? `<a href="${esc(href)}" target="_blank" rel="noopener" class="mc-li">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
-          ${esc(m.linkedin)}</a>` : ''}
+        ${sessionsHtml ? '<div class="mc-chevron">›</div>' : ''}
       </div>
+      ${sessionsHtml ? `<div class="mc-sessions">${sessionsHtml}</div>` : ''}
     </div>`;
+  }
+
+  function getSessionsInOrder(sessionNums) {
+    const numSet = new Set(sessionNums);
+    const result = [];
+    for (const slot of slots) {
+      for (const s of slot.sessions) {
+        if (numSet.has(s.number)) result.push(s);
+      }
+    }
+    return result;
+  }
+
+  function toggleMcSessions(el) {
+    el.classList.toggle('open');
   }
 
   // ── Overlay helpers ───────────────────────────────
@@ -695,7 +619,7 @@
   function closeOverlay(id) { document.getElementById(id).classList.remove('on'); }
   function overlayClick(e, id) { if (e.target === e.currentTarget) closeOverlay(id); }
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closeOverlay('saveOverlay'); closeOverlay('loadOverlay'); }
+    if (e.key === 'Escape') { closeOverlay('saveOverlay'); }
   });
 
   // ── Toast ─────────────────────────────────────────

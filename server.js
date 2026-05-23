@@ -110,7 +110,7 @@ app.get('/api/matches/:token', (req, res) => {
     .map(u => {
       const theirs = JSON.parse(u.sessions);
       const common = theirs.filter(s => mine.has(s));
-      return { name: u.name, linkedin: u.linkedin, overlap: common.length, totalSessions: theirs.length };
+      return { name: u.name, linkedin: u.linkedin, overlap: common.length, totalSessions: theirs.length, sessions: theirs, commonSessions: common };
     })
     .filter(m => m.totalSessions > 0)
     .sort((a, b) => b.overlap - a.overlap || b.totalSessions - a.totalSessions);

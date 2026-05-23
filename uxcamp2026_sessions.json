@@ -1,0 +1,105 @@
+{
+  "event": "UXcamp Europe 2026",
+  "date": "2026-05-23",
+  "timeslots": [
+    {
+      "id": "session-1",
+      "label": "Session 1",
+      "time": "09:00–09:45",
+      "sessions": [
+        { "number": 104, "title": "Design Management at Enterprise Scale", "type": "Discussion" },
+        { "number": 110, "title": "My 10 Biggest A-Ha Moments and what it means for AI → Design", "type": "Talk" },
+        { "number": 14,  "title": "Oops.. I became a PM", "type": "Talk" },
+        { "number": 5,   "title": "Mind the Intelligence Gap", "type": "Talk" },
+        { "number": 44,  "title": "Strategy expressed in UI — From brief to prototype in days", "type": "Talk" },
+        { "number": 76, "title": "Decluttering Metrics", "type": "Talk" },
+        { "number": 74, "title": "AI-Prototyping with Codex", "type": "Talk" },
+        { "number": 24, "title": "Hidden Rules — \"How to utilize expertise of others\"", "type": "Talk" },
+        { "number": 50, "title": "The future of mobile design", "type": "Talk" }
+      ]
+    },
+    {
+      "id": "session-2",
+      "label": "Session 2",
+      "time": "10:00–10:45",
+      "sessions": [
+        { "number": 32,  "title": "From Hype to Habbit", "type": "Discussion" },
+        { "number": 40,  "title": "Lean UX Tracking. Let's talk metrics", "type": "Discussion" },
+        { "number": 1,   "title": "The state of our INDUSTRY", "type": "Discussion" },
+        { "number": 38,  "title": "A tale of two movements: the history of agile (and UX)", "type": "Talk" },
+        { "number": 88,  "title": "Astronaut Experience: Deep Space Challenge", "type": "Talk" },
+        { "number": 52,  "title": "Product Value w/o AI or not.", "type": "Talk" },
+        { "number": 8, "title": "I beg you to differ", "type": "Discussion" },
+        { "number": 16, "title": "Redesign your leadership career", "type": "Discussion" },
+        { "number": 34, "title": "A fishbowl for monkey-brains", "type": "Discussion" },
+        { "number": 4, "title": "Designing for Agents: Let's write the principles together", "type": "Discussion" }
+      ]
+    },
+    {
+      "id": "session-3",
+      "label": "Session 3",
+      "time": "12:00–12:45",
+      "sessions": [
+        { "number": 60,  "title": "From Precision to Playfulness", "type": "Talk" },
+        { "number": 134, "title": "Thinking Together: The importance of human collaboration (in an AI world)", "type": "Discussion" },
+        { "number": 102, "title": "What is job love? A tale of drudgery, devotion + design", "type": "Talk" },
+        { "number": 68,  "title": "Object-oriented UX: systems engineering 4 designers", "type": "Workshop" },
+        { "number": 12,  "title": "When AI is accurate but noone uses it (How to increase AI Adoption as UX/UI Designer)", "type": "Discussion" },
+        { "number": 28,  "title": "Agentic AI in Diagnostics at ASML", "type": "Discussion" },
+        { "number": 42, "title": "Accessibility (A11Y) Beyond WCAG Rules", "type": "Discussion" },
+        { "number": 56, "title": "Will designers still be needed?", "type": "Discussion" },
+        { "number": 124, "title": "UX for CMS Users", "type": "Talk" },
+        { "number": 26, "title": "Wenn Sichtbarkeit zur Hürde wird (1)", "type": "Talk" }
+      ]
+    },
+    {
+      "id": "session-4",
+      "label": "Session 4",
+      "time": "13:00–13:45",
+      "sessions": [
+        { "number": 98,  "title": "The Ugly Cost of AI Adoption (clinic approach)", "type": "Discussion" },
+        { "number": 10,  "title": "General Purpose Turmoil:", "type": "Talk", "note": "Titel endet mit Doppelpunkt — bitte prüfen" },
+        { "number": 86,  "title": "Using psychology to ask better research questions", "type": "Talk" },
+        { "number": 72,  "title": "How to give a (fantastic) great UXcamp talk", "type": "Talk" },
+        { "number": 6,   "title": "Making AI your second nature", "type": "Discussion" },
+        { "number": 116, "title": "Why Jazz Musicians are better UX Managers", "type": "Talk" },
+        { "number": 84, "title": "The design system you can eat!", "type": "Workshop" },
+        { "number": 92, "title": "UX in Space", "type": "Talk" },
+        { "number": 22, "title": "When Claude takes over...", "type": "Discussion" },
+        { "number": 62, "title": "UX Hot Takes", "type": "Discussion" }
+      ]
+    },
+    {
+      "id": "session-5",
+      "label": "Session 5",
+      "time": "14:00–14:45",
+      "sessions": [
+        { "number": 132, "title": "Shipwrecks & Sailors", "type": "Talk" },
+        { "number": 94,  "title": "Sense Mapping™", "type": "Workshop" },
+        { "number": 58,  "title": "Hackathon: MVP is 99% cheaper. Discovery is behind.", "type": "Talk" },
+        { "number": 120, "title": "Do websites need pages anymore?", "type": "Discussion" },
+        { "number": 108, "title": "Dr. Workshop", "type": "Talk" },
+        { "number": 48,  "title": "From Solo-Prompting back to teamwork (with AI)", "type": "Discussion" },
+        { "number": 96, "title": "Rock around the clock", "type": "Workshop" },
+        { "number": 106, "title": "Designing through turbulence", "type": "Talk" },
+        { "number": 46, "title": "Ship it! with confidence", "type": "Workshop" },
+        { "number": 100, "title": "Becoming a fulltime freelancer", "type": "Discussion" }
+      ]
+    },
+    {
+      "id": "session-6",
+      "label": "Session 6",
+      "time": "15:00–15:45",
+      "sessions": [
+        { "number": 36,  "title": "Agentic Experience Design", "type": "Talk" },
+        { "number": 136, "title": "Resonate with strangers", "type": "Workshop" },
+        { "number": 138, "title": "The worst person in the world?", "type": "Discussion" },
+        { "number": 122, "title": "Think, make, and the in between.", "type": "Talk" },
+        { "number": 20, "title": "Art. Emotion. Connection", "type": "Talk" },
+        { "number": 70, "title": "Dashboard UX", "type": "Workshop" },
+        { "number": 112, "title": "Storytelling for Business & Meaning", "type": "Talk" },
+        { "number": 126, "title": "Shape an open source product", "type": "Discussion" }
+      ]
+    }
+  ]
+}

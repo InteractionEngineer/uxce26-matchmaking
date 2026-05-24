@@ -184,6 +184,9 @@
     .mc-sess-num { font-size: 11px; font-weight: 700; min-width: 32px; flex-shrink: 0; }
     .mc-sess-common { color: var(--text); font-weight: 600; }
     .mc-sess-common .mc-sess-num { color: var(--primary); }
+    .mc-day-hdr { display: flex; align-items: center; gap: 8px; margin: 8px 0 4px; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+    .mc-day-hdr:first-child { margin-top: 0; }
+    .mc-day-hdr::after { content: ''; flex: 1; height: 1px; background: var(--border); }
     .gate { text-align: center; padding: 60px 20px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
     .loading { text-align: center; padding: 40px; color: var(--muted); font-size: 14px; }
 
@@ -615,9 +618,16 @@
     const initials = m.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
     const orderedSessions = getSessionsInOrder(m.sessions || []);
     const commonSet = new Set(m.commonSessions || []);
+    let mcLastDate = null; let mcDayNum = 0;
     const sessionsHtml = orderedSessions.map(({ session: s, slot }) => {
       const isCommon = commonSet.has(s.number);
-      return `<div class="mc-sess-row${isCommon ? ' mc-sess-common' : ''}">
+      let dayHdr = '';
+      if (slot.date !== mcLastDate) {
+        mcLastDate = slot.date;
+        mcDayNum++;
+        dayHdr = `<div class="mc-day-hdr">Day ${mcDayNum}</div>`;
+      }
+      return `${dayHdr}<div class="mc-sess-row${isCommon ? ' mc-sess-common' : ''}">
         <span class="mc-sess-num">${esc(slot.time.split('–')[0])}</span>
         <span>${esc(s.title)}</span>
       </div>`;

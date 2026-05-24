@@ -66,6 +66,12 @@
     .search-clear.on { display: flex; }
     .search-clear:hover { color: var(--text); }
 
+    /* ── Day separator ──────────────────────────── */
+    .day-hdr { display: flex; align-items: center; gap: 10px; margin: 32px 0 16px; font-size: 13px; font-weight: 700; }
+    .day-hdr:first-child { margin-top: 0; }
+    .day-hdr::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .day-date { font-weight: 400; color: var(--muted); }
+
     /* ── Timeslots ───────────────────────────────── */
     .timeslot { margin-bottom: 28px; }
     .timeslot.hide { display: none; }
@@ -373,6 +379,8 @@
     const q = query.toLowerCase();
     let anyVisible = false;
 
+    let lastDate = null;
+    let dayNum = 0;
     document.getElementById('slots').innerHTML = slots.map(slot => {
       const visible = slot.sessions.filter(s =>
         !q || s.title.toLowerCase().includes(q) || String(s.number).includes(q) || s.type.toLowerCase().includes(q)
@@ -380,7 +388,16 @@
       if (visible.length) anyVisible = true;
       const n = slot.sessions.filter(s => picked.has(s.number)).length;
 
-      return `<div class="timeslot${visible.length === 0 && q ? ' hide' : ''}" id="slot-${slot.id}">
+      let dayHdr = '';
+      if (slot.date !== lastDate) {
+        lastDate = slot.date;
+        dayNum++;
+        const d = new Date(slot.date + 'T00:00:00');
+        const label = d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long' });
+        dayHdr = `<div class="day-hdr">Day ${dayNum} <span class="day-date">${label}</span></div>`;
+      }
+
+      return `${dayHdr}<div class="timeslot${visible.length === 0 && q ? ' hide' : ''}" id="slot-${slot.id}">
         <div class="slot-hdr">
           <span class="slot-lbl">${slot.label}</span>
           <span class="slot-time">${slot.time}</span>

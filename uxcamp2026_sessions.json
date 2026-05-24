@@ -1,9 +1,9 @@
 {
   "event": "#uxce26 Matchmaker",
-  "date": "2026-05-23",
   "timeslots": [
     {
       "id": "session-1",
+      "date": "2026-05-23",
       "label": "Session 1",
       "time": "10:00–10:45",
       "sessions": [
@@ -12,14 +12,15 @@
         { "number": 14,  "title": "Oops.. I became a PM", "type": "Talk" },
         { "number": 5,   "title": "Mind the Intelligence Gap", "type": "Talk" },
         { "number": 44,  "title": "Strategy expressed in UI — From brief to prototype in days", "type": "Talk" },
-        { "number": 76, "title": "Decluttering Metrics", "type": "Talk" },
-        { "number": 74, "title": "AI-Prototyping with Codex", "type": "Talk" },
-        { "number": 24, "title": "Hidden Rules — \"How to utilize expertise of others\"", "type": "Talk" },
-        { "number": 50, "title": "The future of mobile design", "type": "Talk" }
+        { "number": 76,  "title": "Decluttering Metrics", "type": "Talk" },
+        { "number": 74,  "title": "AI-Prototyping with Codex", "type": "Talk" },
+        { "number": 24,  "title": "Hidden Rules — \"How to utilize expertise of others\"", "type": "Talk" },
+        { "number": 50,  "title": "The future of mobile design", "type": "Talk" }
       ]
     },
     {
       "id": "session-2",
+      "date": "2026-05-23",
       "label": "Session 2",
       "time": "11:00–11:45",
       "sessions": [
@@ -29,14 +30,15 @@
         { "number": 38,  "title": "A tale of two movements: the history of agile (and UX)", "type": "Talk" },
         { "number": 88,  "title": "Astronaut Experience: Deep Space Challenge", "type": "Talk" },
         { "number": 52,  "title": "Product Value w/o AI or not.", "type": "Talk" },
-        { "number": 8, "title": "I beg you to differ", "type": "Discussion" },
-        { "number": 16, "title": "Redesign your leadership career", "type": "Discussion" },
-        { "number": 34, "title": "A fishbowl for monkey-brains", "type": "Discussion" },
-        { "number": 4, "title": "Designing for Agents: Let's write the principles together", "type": "Discussion" }
+        { "number": 8,   "title": "I beg you to differ", "type": "Discussion" },
+        { "number": 16,  "title": "Redesign your leadership career", "type": "Discussion" },
+        { "number": 34,  "title": "A fishbowl for monkey-brains", "type": "Discussion" },
+        { "number": 4,   "title": "Designing for Agents: Let's write the principles together", "type": "Discussion" }
       ]
     },
     {
       "id": "session-3",
+      "date": "2026-05-23",
       "label": "Session 3",
       "time": "14:00–14:45",
       "sessions": [
@@ -46,14 +48,15 @@
         { "number": 68,  "title": "Object-oriented UX: systems engineering 4 designers", "type": "Workshop" },
         { "number": 12,  "title": "When AI is accurate but noone uses it (How to increase AI Adoption as UX/UI Designer)", "type": "Discussion" },
         { "number": 28,  "title": "Agentic AI in Diagnostics at ASML", "type": "Discussion" },
-        { "number": 42, "title": "Accessibility (A11Y) Beyond WCAG Rules", "type": "Discussion" },
-        { "number": 56, "title": "Will designers still be needed?", "type": "Discussion" },
+        { "number": 42,  "title": "Accessibility (A11Y) Beyond WCAG Rules", "type": "Discussion" },
+        { "number": 56,  "title": "Will designers still be needed?", "type": "Discussion" },
         { "number": 124, "title": "UX for CMS Users", "type": "Talk" },
-        { "number": 26, "title": "Wenn Sichtbarkeit zur Hürde wird (1)", "type": "Talk" }
+        { "number": 26,  "title": "Wenn Sichtbarkeit zur Hürde wird (1)", "type": "Talk" }
       ]
     },
     {
       "id": "session-4",
+      "date": "2026-05-23",
       "label": "Session 4",
       "time": "15:00–15:45",
       "sessions": [
@@ -63,14 +66,15 @@
         { "number": 72,  "title": "How to give a (fantastic) great UXcamp talk", "type": "Talk" },
         { "number": 6,   "title": "Making AI your second nature", "type": "Discussion" },
         { "number": 116, "title": "Why Jazz Musicians are better UX Managers", "type": "Talk" },
-        { "number": 84, "title": "The design system you can eat!", "type": "Workshop" },
-        { "number": 92, "title": "UX in Space", "type": "Talk" },
-        { "number": 22, "title": "When Claude takes over...", "type": "Discussion" },
-        { "number": 62, "title": "UX Hot Takes", "type": "Discussion" }
+        { "number": 84,  "title": "The design system you can eat!", "type": "Workshop" },
+        { "number": 92,  "title": "UX in Space", "type": "Talk" },
+        { "number": 22,  "title": "When Claude takes over...", "type": "Discussion" },
+        { "number": 62,  "title": "UX Hot Takes", "type": "Discussion" }
       ]
     },
     {
       "id": "session-5",
+      "date": "2026-05-23",
       "label": "Session 5",
       "time": "16:00–16:45",
       "sessions": [
@@ -80,14 +84,15 @@
         { "number": 120, "title": "Do websites need pages anymore?", "type": "Discussion" },
         { "number": 108, "title": "Dr. Workshop", "type": "Talk" },
         { "number": 48,  "title": "From Solo-Prompting back to teamwork (with AI)", "type": "Discussion" },
-        { "number": 96, "title": "Rock around the clock", "type": "Workshop" },
+        { "number": 96,  "title": "Rock around the clock", "type": "Workshop" },
         { "number": 106, "title": "Designing through turbulence", "type": "Talk" },
-        { "number": 46, "title": "Ship it! with confidence", "type": "Workshop" },
+        { "number": 46,  "title": "Ship it! with confidence", "type": "Workshop" },
         { "number": 100, "title": "Becoming a fulltime freelancer", "type": "Discussion" }
       ]
     },
     {
       "id": "session-6",
+      "date": "2026-05-23",
       "label": "Session 6",
       "time": "17:00–17:45",
       "sessions": [
@@ -95,10 +100,105 @@
         { "number": 136, "title": "Resonate with strangers", "type": "Workshop" },
         { "number": 138, "title": "The worst person in the world?", "type": "Discussion" },
         { "number": 122, "title": "Think, make, and the in between.", "type": "Talk" },
-        { "number": 20, "title": "Art. Emotion. Connection", "type": "Talk" },
-        { "number": 70, "title": "Dashboard UX", "type": "Workshop" },
+        { "number": 20,  "title": "Art. Emotion. Connection", "type": "Talk" },
+        { "number": 70,  "title": "Dashboard UX", "type": "Workshop" },
         { "number": 112, "title": "Storytelling for Business & Meaning", "type": "Talk" },
         { "number": 126, "title": "Shape an open source product", "type": "Discussion" }
+      ]
+    },
+    {
+      "id": "day2-session-1",
+      "date": "2026-05-24",
+      "label": "Session 1",
+      "time": "11:00–11:45",
+      "sessions": [
+        { "number": 13,  "title": "AI and Humans? A Sustainable Future?", "type": "Discussion" },
+        { "number": 127, "title": "Parental Discrimination", "type": "Discussion" },
+        { "number": 89,  "title": "Artefacts for Conversational Experiences", "type": "Talk" },
+        { "number": 41,  "title": "Human Bottlenecks", "type": "Workshop" },
+        { "number": 125, "title": "UX team of one", "type": "Talk" },
+        { "number": 66,  "title": "When seemingly worse UX is actually BETTER UX", "type": "Talk" },
+        { "number": 73,  "title": "Two rubberducks, One Quiz and a thousand ideas in between", "type": "Talk" },
+        { "number": 49,  "title": "VIBECODING IS A DEAD END", "type": "Talk" },
+        { "number": 15,  "title": "MINING FOR GOLD!", "type": "Talk" }
+      ]
+    },
+    {
+      "id": "day2-session-2",
+      "date": "2026-05-24",
+      "label": "Session 2",
+      "time": "12:00–12:45",
+      "sessions": [
+        { "number": 140, "title": "Interactive Speculative Design workshop about Four Futures of AI (in design field)", "type": "Workshop" },
+        { "number": 81,  "title": "To Die For — Rewilding Grief", "type": "Talk" },
+        { "number": 39,  "title": "Animations — stakeholders can't see but users always feel", "type": "Talk" },
+        { "number": 61,  "title": "The obvious reflex", "type": "Workshop" },
+        { "number": 35,  "title": "Psychological Safety", "type": "Discussion" },
+        { "number": 93,  "title": "AYAHUASKA RITUAL", "type": "Discussion" },
+        { "number": 87,  "title": "Shaping Leadership", "type": "Workshop" },
+        { "number": 47,  "title": "AI x Burnout Why are we tired?", "type": "Talk" },
+        { "number": 45,  "title": "Lightweight methods I teach in UX coachings for small Open Source Projects", "type": "Talk" },
+        { "number": 21,  "title": "Calmness creates Clarity", "type": "Discussion" }
+      ]
+    },
+    {
+      "id": "day2-session-3",
+      "date": "2026-05-24",
+      "label": "Session 3",
+      "time": "13:00–13:45",
+      "sessions": [
+        { "number": 9,    "title": "UXcamp 2030", "type": "Discussion" },
+        { "number": 59,   "title": "Let's talk about keyboard layouts (½ session)", "type": "Discussion" },
+        { "number": 53,   "title": "Try out the \"Futures Triangle\" by Sohail Inayatullah", "type": "Workshop" },
+        { "number": 63,   "title": "DOES \"HUMAN TOUCH\" REALLY STILL MATTER?", "type": "Discussion" },
+        { "number": 119,  "title": "UX ≠ Design", "type": "Talk" }
+      ]
+    },
+    {
+      "id": "day2-session-4",
+      "date": "2026-05-24",
+      "label": "Session 4",
+      "time": "14:00–14:45",
+      "sessions": [
+        { "number": 25,  "title": "A different kind: Design in the public sector", "type": "Talk" },
+        { "number": 43,  "title": "Can TRUST be designed? (or we better at faking it?)", "type": "Discussion" },
+        { "number": 69,  "title": "When the product is a \"room\"", "type": "Workshop" },
+        { "number": 33,  "title": "How to find the story that sells your idea!", "type": "Workshop" },
+        { "number": 91,  "title": "Aiming is the job", "type": "Talk" },
+        { "number": 23,  "title": "Pivoting Product Strategy: a battle half won.", "type": "Talk" },
+        { "number": 37,  "title": "THE COMEDY OF MISERY", "type": "Workshop" },
+        { "number": 71,  "title": "Keeping Work WEIRD", "type": "Workshop" },
+        { "number": 29,  "title": "WIZARDS ANXIOUS THE APPRENTICE of EARTHSEA", "type": "Talk" },
+        { "number": 55,  "title": "MINDFUL CREATIVE PLAY LAB", "type": "Workshop" },
+        { "number": 77,  "title": "Building Authority with The ONE Thing Diamond", "type": "Talk" }
+      ]
+    },
+    {
+      "id": "day2-session-5",
+      "date": "2026-05-24",
+      "label": "Session 5",
+      "time": "15:00–15:45",
+      "sessions": [
+        { "number": 51,  "title": "Typography is UX", "type": "Talk" },
+        { "number": 17,  "title": "Burnout in Design", "type": "Workshop" },
+        { "number": 85,  "title": "The job market — Tips, tricks and feelings", "type": "Discussion" },
+        { "number": 27,  "title": "Probabilistic UX — User & System Collaboration", "type": "Talk" },
+        { "number": 79,  "title": "Let's talk Democracy", "type": "Workshop" },
+        { "number": 142, "title": "Figma's MCPs: Bridging Design and Code with AI", "type": "Talk" },
+        { "number": 75,  "title": "A (STUPID) LITTLE WALK FOR OUR MENTAL HEALTH", "type": "Workshop" },
+        { "number": 114, "title": "Zwischen Fokus und Überforderung", "type": "Talk" },
+        { "number": 67,  "title": "The UX of Techno", "type": "Talk" },
+        { "number": 83,  "title": "Make money with landing pages in the age of AI", "type": "Talk" },
+        { "number": 65,  "title": "DON'T TAKE THE HAPPY PATH!", "type": "Talk" }
+      ]
+    },
+    {
+      "id": "day2-session-6",
+      "date": "2026-05-24",
+      "label": "Session 6",
+      "time": "16:00–16:45",
+      "sessions": [
+        { "number": 121, "title": "Closing & Raffle", "type": "Talk" }
       ]
     }
   ]

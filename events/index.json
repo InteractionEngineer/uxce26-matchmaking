@@ -1,0 +1,27 @@
+{
+  "default": "uxchh26",
+  "events": [
+    {
+      "id": "uxchh26",
+      "dataFile": "uxchh26.json",
+      "name": "#uxchh26 Matchmaker",
+      "title": "UXcamp Hamburg 2026",
+      "hashtag": "#uxchh26",
+      "legal": {
+        "eventName": "UXcamp Hamburg 2026",
+        "lastUpdated": "September 2026"
+      }
+    },
+    {
+      "id": "uxce26",
+      "dataFile": "uxce26.json",
+      "name": "#uxce26 Matchmaker",
+      "title": "UXcamp Europe 2026",
+      "hashtag": "#uxce26",
+      "legal": {
+        "eventName": "UXcamp Europe 2026",
+        "lastUpdated": "May 2026"
+      }
+    }
+  ]
+}

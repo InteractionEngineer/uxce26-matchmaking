@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>#uxce26 Matchmaker</title>
+  <title>[App name]</title>
   <style>
     :root {
       --primary: #1d4ed8;
@@ -103,6 +103,16 @@
     .bw { background: #d1fae5; color: #065f46; }
     .li-title { font-size: 14px; line-height: 1.35; color: var(--text); }
     .li-row.sel .li-title { font-weight: 600; }
+    .li-sub { font-size: 12px; color: var(--muted); }
+    .li-row.sel .li-sub { color: var(--primary); }
+    /* Programme entries (breaks, intro, photo) — context only, never pickable */
+    .prog { margin: -14px 0 14px; padding: 0 2px; }
+    .prog-line { display: flex; align-items: baseline; gap: 10px; padding: 3px 0; font-size: 12px; color: var(--muted); }
+    .prog-time { font-weight: 700; min-width: 42px; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+    .li-row.info, .li-row.info:hover { cursor: default; background: var(--card); }
+    .li-row.info .li-title { color: var(--muted); }
+    .li-dot { width: 20px; flex-shrink: 0; text-align: center; color: #cbd5e1; font-size: 18px; line-height: 1; }
+    .empty-board { text-align: center; padding: 60px 20px; color: var(--muted); }
     .no-results { text-align: center; padding: 60px 20px; color: var(--muted); display: none; }
     .no-results.on { display: block; }
 
@@ -205,7 +215,7 @@
 <!-- ── Header ──────────────────────────────────────── -->
 <header class="header">
   <div class="hdr-inner">
-    <a href="/" class="brand">#uxce26 Matchmaker</a>
+    <a href="/" class="brand">[App name]</a>
     <div class="hdr-right" id="hdrRight"></div>
   </div>
   <div class="tabs">
@@ -294,10 +304,13 @@
 <script>
   // ── State ─────────────────────────────────────────
   let me     = null;          // { token, name, linkedin }
-  let picked = new Set();
+  let picked = new Set();     // session ids (always strings)
   let saved  = new Set();
+  let board  = null;          // whole payload from /api/sessions
   let slots  = [];
   let query  = '';
+  let ns     = 'default';     // event id — namespaces localStorage so two events don't mix
+  const k = key => `${key}:${ns}`;
 
   // ── API ───────────────────────────────────────────
   const api = {
@@ -321,37 +334,57 @@
 
   // ── Boot ──────────────────────────────────────────
   window.addEventListener('DOMContentLoaded', async () => {
-    const stored = localStorage.getItem('_picked');
-    if (stored) { try { JSON.parse(stored).forEach(s => picked.add(s)); } catch(e) {} }
+    board = await api.sessions();
+    slots = board.timeslots;
+    ns    = board.event?.id || 'default';
 
-    const data = await api.sessions();
-    slots = data.timeslots;
+    const stored = localStorage.getItem(k('_picked'));
+    if (stored) { try { JSON.parse(stored).forEach(s => picked.add(String(s))); } catch(e) {} }
+
+    bindSlotEvents();
     renderSlots();
     updateBar();
 
-    const token = localStorage.getItem('_token');
+    const token = localStorage.getItem(k('_token'));
     if (token) {
       const user = await api.userByToken(token);
       if (user) {
         applyIdentity(user.token, user.name, user.linkedin, user.sessions);
         toast(`Welcome back, ${user.name}!`);
       } else {
-        localStorage.removeItem('_token');
-        localStorage.removeItem('_name');
-        localStorage.removeItem('_li');
+        localStorage.removeItem(k('_token'));
+        localStorage.removeItem(k('_name'));
+        localStorage.removeItem(k('_li'));
       }
     }
   });
 
+  // Rows are re-rendered constantly, so listen on the container instead of
+  // wiring handlers onto every row.
+  function bindSlotEvents() {
+    const el = document.getElementById('slots');
+    el.addEventListener('click', e => {
+      const row = e.target.closest('.li-row[data-id]');
+      if (row) toggle(row.dataset.id);
+    });
+    el.addEventListener('keydown', e => {
+      if (e.key !== ' ' && e.key !== 'Enter') return;
+      const row = e.target.closest('.li-row[data-id]');
+      if (!row) return;
+      e.preventDefault();
+      toggle(row.dataset.id);
+    });
+  }
+
   function applyIdentity(token, name, linkedin, sessions = []) {
     me = { token, name, linkedin };
-    localStorage.setItem('_token', token);
-    localStorage.setItem('_name', name);
-    localStorage.setItem('_li', linkedin || '');
+    localStorage.setItem(k('_token'), token);
+    localStorage.setItem(k('_name'), name);
+    localStorage.setItem(k('_li'), linkedin || '');
     picked.clear();
-    sessions.forEach(s => picked.add(s));
+    sessions.forEach(s => picked.add(String(s)));
     saved = new Set(picked);
-    localStorage.setItem('_picked', JSON.stringify([...picked]));
+    localStorage.setItem(k('_picked'), JSON.stringify([...picked]));
     updateHeader();
     renderSlots();
     updateBar();
@@ -378,32 +411,59 @@
   }
 
   // ── Sessions ──────────────────────────────────────
+  const matchesQuery = (s, q) => !q || [s.title, s.type, s.host, s.room, s.number]
+    .some(v => v != null && String(v).toLowerCase().includes(q));
+
+  const countPicked = slot => slot.sessions.filter(s => s.selectable && picked.has(s.id)).length;
+
   function renderSlots() {
     const q = query.toLowerCase();
-    let anyVisible = false;
+    const container = document.getElementById('slots');
 
+    if (!slots.length) {
+      container.innerHTML = `<div class="empty-board">
+        <div style="font-size:44px;margin-bottom:12px">🗓</div>
+        <div style="font-size:16px;font-weight:700;margin-bottom:6px">The board isn't up yet</div>
+        <div style="font-size:14px">Come back once the sessions have been pitched and planned.</div>
+      </div>`;
+      document.getElementById('noRes').classList.remove('on');
+      return;
+    }
+
+    const multiDay = (board?.days?.length || 1) > 1;
+    let anyVisible = false;
     let lastDate = null;
     let dayNum = 0;
-    document.getElementById('slots').innerHTML = slots.map(slot => {
-      const visible = slot.sessions.filter(s =>
-        !q || s.title.toLowerCase().includes(q) || String(s.number).includes(q) || s.type.toLowerCase().includes(q)
-      );
-      if (visible.length) anyVisible = true;
-      const n = slot.sessions.filter(s => picked.has(s.number)).length;
+
+    container.innerHTML = slots.map(slot => {
+      const visible = slot.sessions.filter(s => matchesQuery(s, q));
+      const n = countPicked(slot);
+      const pickable = slot.sessions.some(s => s.selectable);
+      if (visible.length && pickable) anyVisible = true;
 
       let dayHdr = '';
-      if (slot.date !== lastDate) {
+      if (slot.date && slot.date !== lastDate) {
         lastDate = slot.date;
         dayNum++;
         const d = new Date(slot.date + 'T00:00:00');
         const label = d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long' });
-        dayHdr = `<div class="day-hdr">Day ${dayNum} <span class="day-date">${label}</span></div>`;
+        dayHdr = multiDay
+          ? `<div class="day-hdr">Day ${dayNum} <span class="day-date">${label}</span></div>`
+          : `<div class="day-hdr"><span class="day-date">${label}</span></div>`;
+      }
+
+      // Slots without anything to pick (arrival, breaks, wrap-up) are context, not
+      // content — a thin line each, and out of the way entirely while searching.
+      if (!pickable) {
+        return `${q ? '' : dayHdr + `<div class="prog" id="slot-${slot.id}">${slot.sessions.map(s =>
+          `<div class="prog-line"><span class="prog-time">${esc(slot.time.split('–')[0])}</span><span>${esc(s.title)}</span></div>`
+        ).join('')}</div>`}`;
       }
 
       return `${dayHdr}<div class="timeslot${visible.length === 0 && q ? ' hide' : ''}" id="slot-${slot.id}">
         <div class="slot-hdr">
-          <span class="slot-lbl">${slot.label}</span>
-          <span class="slot-time">${slot.time}</span>
+          <span class="slot-lbl">${esc(slot.label)}</span>
+          <span class="slot-time">${esc(slot.time)}</span>
           <span class="slot-cnt ${n > 0 ? 'has' : 'none'}" id="cnt-${slot.id}">${n > 0 ? n + ' attended' : '–'}</span>
         </div>
         <div class="slist">
@@ -416,11 +476,25 @@
   }
 
   function row(s, hidden) {
-    const sel = picked.has(s.number);
-    const bc = s.type === 'Talk' ? 'bt' : s.type === 'Workshop' ? 'bw' : 'bd';
-    return `<div class="li-row${sel ? ' sel' : ''}${hidden ? ' hide' : ''}" id="c-${s.number}"
-        onclick="toggle(${s.number})" role="checkbox" aria-checked="${sel}" tabindex="0"
-        onkeydown="if(event.key===' '||event.key==='Enter'){event.preventDefault();toggle(${s.number})}">
+    // Everything besides the title stays quiet — picking a session you sat in only
+    // needs the title, the rest is there to tell two similar pitches apart.
+    const meta = [];
+    if (s.number != null) meta.push(`<span class="li-num">#${esc(s.number)}</span>`);
+    if (s.type) meta.push(`<span class="li-badge ${s.type === 'Talk' ? 'bt' : s.type === 'Workshop' ? 'bw' : 'bd'}">${esc(s.type)}</span>`);
+    const sub = [s.room, s.host].filter(Boolean).map(esc).join(' · ');
+    if (sub) meta.push(`<span class="li-sub">${sub}</span>`);
+    const metaHtml = meta.length ? `<div class="li-meta">${meta.join('')}</div>` : '';
+
+    if (!s.selectable) {
+      return `<div class="li-row info${hidden ? ' hide' : ''}">
+        <div class="li-dot">•</div>
+        <div class="li-content"><span class="li-title">${esc(s.title)}</span></div>
+      </div>`;
+    }
+
+    const sel = picked.has(s.id);
+    return `<div class="li-row${sel ? ' sel' : ''}${hidden ? ' hide' : ''}" id="c-${esc(s.id)}" data-id="${esc(s.id)}"
+        role="checkbox" aria-checked="${sel}" tabindex="0">
       <div class="li-chk">
         <svg class="chk-svg" width="10" height="8" viewBox="0 0 10 8" fill="none"
              stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -429,32 +503,30 @@
       </div>
       <div class="li-content">
         <span class="li-title">${esc(s.title)}</span>
-        <div class="li-meta">
-          <span class="li-num">#${s.number}</span>
-          <span class="li-badge ${bc}">${esc(s.type)}</span>
-        </div>
+        ${metaHtml}
       </div>
     </div>`;
   }
 
-  function toggle(num) {
-    const wasSelected = picked.has(num);
-    wasSelected ? picked.delete(num) : picked.add(num);
-    localStorage.setItem('_picked', JSON.stringify([...picked]));
+  function toggle(id) {
+    const wasSelected = picked.has(id);
+    wasSelected ? picked.delete(id) : picked.add(id);
+    localStorage.setItem(k('_picked'), JSON.stringify([...picked]));
 
-    const el = document.getElementById(`c-${num}`);
+    const el = document.getElementById(`c-${id}`);
     if (el) {
       el.classList.toggle('sel', !wasSelected);
       el.setAttribute('aria-checked', !wasSelected);
     }
 
-    // Auto-scroll to next timeslot on selection (not deselection, not during search)
+    // Auto-scroll to the next slot you can still pick from (not on deselection,
+    // not during search) — programme slots like breaks are skipped.
     if (!wasSelected && !query) {
-      const idx = slots.findIndex(s => s.sessions.some(sess => sess.number === num));
-      if (idx >= 0 && idx < slots.length - 1) {
-        const nextId = slots[idx + 1].id;
+      const idx = slots.findIndex(s => s.sessions.some(sess => sess.id === id));
+      const next = idx >= 0 ? slots.slice(idx + 1).find(s => s.sessions.some(sess => sess.selectable)) : null;
+      if (next) {
         setTimeout(() => {
-          const nextEl = document.getElementById(`slot-${nextId}`);
+          const nextEl = document.getElementById(`slot-${next.id}`);
           if (!nextEl) return;
           const hdrH = document.querySelector('.header').offsetHeight;
           window.scrollTo({ top: nextEl.getBoundingClientRect().top + window.scrollY - hdrH - 12, behavior: 'smooth' });
@@ -469,7 +541,7 @@
   function updateSlotCounts() {
     document.getElementById('tabBadge').textContent = picked.size;
     slots.forEach(slot => {
-      const n = slot.sessions.filter(s => picked.has(s.number)).length;
+      const n = countPicked(slot);
       const el = document.getElementById(`cnt-${slot.id}`);
       if (el) { el.textContent = n > 0 ? n + ' attended' : '–'; el.className = 'slot-cnt ' + (n > 0 ? 'has' : 'none'); }
     });
@@ -528,10 +600,10 @@
       const result = await api.save({ token: me?.token ?? null, name, linkedin, sessions: [...picked] });
       me = { token: result.token, name: result.name, linkedin: result.linkedin };
       saved = new Set(picked);
-      localStorage.setItem('_token', me.token);
-      localStorage.setItem('_name', me.name);
-      localStorage.setItem('_li', me.linkedin);
-      localStorage.setItem('_picked', JSON.stringify([...picked]));
+      localStorage.setItem(k('_token'), me.token);
+      localStorage.setItem(k('_name'), me.name);
+      localStorage.setItem(k('_li'), me.linkedin);
+      localStorage.setItem(k('_picked'), JSON.stringify([...picked]));
       updateHeader(); updateBar();
       toast('Sessions saved!');
       switchTab('matches');
@@ -617,12 +689,13 @@
     const w  = maxO > 0 ? Math.round((m.overlap / maxO) * 100) : 0;
     const initials = m.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
     const orderedSessions = getSessionsInOrder(m.sessions || []);
-    const commonSet = new Set(m.commonSessions || []);
+    const commonSet = new Set((m.commonSessions || []).map(String));
+    const multiDay = (board?.days?.length || 1) > 1;
     let mcLastDate = null; let mcDayNum = 0;
     const sessionsHtml = orderedSessions.map(({ session: s, slot }) => {
-      const isCommon = commonSet.has(s.number);
+      const isCommon = commonSet.has(s.id);
       let dayHdr = '';
-      if (slot.date !== mcLastDate) {
+      if (multiDay && slot.date !== mcLastDate) {
         mcLastDate = slot.date;
         mcDayNum++;
         dayHdr = `<div class="mc-day-hdr">Day ${mcDayNum}</div>`;
@@ -650,12 +723,12 @@
     </div>`;
   }
 
-  function getSessionsInOrder(sessionNums) {
-    const numSet = new Set(sessionNums);
+  function getSessionsInOrder(sessionIds) {
+    const idSet = new Set(sessionIds.map(String));
     const result = [];
     for (const slot of slots) {
       for (const s of slot.sessions) {
-        if (numSet.has(s.number)) result.push({ session: s, slot });
+        if (s.selectable && idSet.has(s.id)) result.push({ session: s, slot });
       }
     }
     return result;

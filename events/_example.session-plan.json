@@ -1,0 +1,213 @@
+{
+  "entries": [
+    {
+      "id": "entry-1",
+      "title": "Arrival, coffee & snacks",
+      "description": "",
+      "host": "",
+      "room": "Meet and greet",
+      "startAt": "2026-09-04T09:00:00+02:00",
+      "endAt": "2026-09-04T09:30:00+02:00",
+      "kind": "event"
+    },
+    {
+      "id": "entry-2",
+      "title": "Intro",
+      "description": "Welcome and a quick overview of the day.",
+      "host": "Team UXCamp",
+      "room": "XING",
+      "startAt": "2026-09-04T09:30:00+02:00",
+      "endAt": "2026-09-04T10:00:00+02:00",
+      "kind": "event"
+    },
+    {
+      "id": "entry-3",
+      "title": "Session planning",
+      "description": "Everyone pitches their session ideas and we build the day's board together.",
+      "host": "Team UXCamp",
+      "room": "XING",
+      "startAt": "2026-09-04T10:00:00+02:00",
+      "endAt": "2026-09-04T10:35:00+02:00",
+      "kind": "event"
+    },
+    {
+      "id": "entry-4",
+      "title": "Research sprints in agile teams",
+      "description": "How to gather reliable user insights in a week without derailing the sprint.",
+      "host": "Nina Keller",
+      "room": "XING",
+      "startAt": "2026-09-04T10:45:00+02:00",
+      "endAt": "2026-09-04T11:45:00+02:00",
+      "kind": "session"
+    },
+    {
+      "id": "entry-5",
+      "title": "Making accessibility easier",
+      "description": "Practical tips for accessible interfaces, tested live with a screen reader.",
+      "host": "Jonas Reimer",
+      "room": "Room 1",
+      "startAt": "2026-09-04T10:45:00+02:00",
+      "endAt": "2026-09-04T11:45:00+02:00",
+      "kind": "session"
+    },
+    {
+      "id": "entry-6",
+      "title": "Storytelling for product teams",
+      "description": "How strong stories persuade stakeholders when numbers alone fall short.",
+      "host": "Merle Franke",
+      "room": "Room 2",
+      "startAt": "2026-09-04T10:45:00+02:00",
+      "endAt": "2026-09-04T11:45:00+02:00",
+      "kind": "session"
+    },
+    {
+      "id": "entry-7",
+      "title": "From junior to lead: UX career paths",
+      "description": "An open conversation about growth, changing roles and impostor syndrome.",
+      "host": "Kai Petersen",
+      "room": "Rooftop terrace",
+      "startAt": "2026-09-04T10:45:00+02:00",
+      "endAt": "2026-09-04T11:45:00+02:00",
+      "kind": "session"
+    },
+    {
+      "id": "entry-8",
+      "title": "From wireframe sketch to high-fidelity flow",
+      "description": "A live walkthrough of turning rough sketches into a testable prototype.",
+      "host": "Sophie Lang",
+      "room": "XING",
+      "startAt": "2026-09-04T11:45:00+02:00",
+      "endAt": "2026-09-04T12:30:00+02:00",
+      "kind": "session"
+    },
+    {
+      "id": "entry-9",
+      "title": "Design systems that nobody hates",
+      "description": "Why component libraries fail and how to make them better.",
+      "host": "Tom Brückner",
+      "room": "Room 1",
+      "startAt": "2026-09-04T11:45:00+02:00",
+      "endAt": "2026-09-04T12:30:00+02:00",
+      "kind": "session"
+    },
+    {
+      "id": "entry-10",
+      "title": "Lunch break",
+      "description": "Time for food, networking and a little fresh air.",
+      "host": "",
+      "room": "ZEAL",
+      "startAt": "2026-09-04T12:30:00+02:00",
+      "endAt": "2026-09-04T13:45:00+02:00",
+      "kind": "event"
+    },
+    {
+      "id": "entry-11",
+      "title": "AI copilots in the design process",
+      "description": "An honest look at AI tools in the daily UX workflow: hype versus value.",
+      "host": "Elena Ruiz",
+      "room": "XING",
+      "startAt": "2026-09-04T13:45:00+02:00",
+      "endAt": "2026-09-04T14:45:00+02:00",
+      "kind": "session"
+    },
+    {
+      "id": "entry-12",
+      "title": "Micro-interactions that delight",
+      "description": "Small details, big impact: using animation and feedback well.",
+      "host": "David Nowak",
+      "room": "Room 1",
+      "startAt": "2026-09-04T13:45:00+02:00",
+      "endAt": "2026-09-04T14:45:00+02:00",
+      "kind": "session"
+    },
+    {
+      "id": "entry-13",
+      "title": "Content design for complex products",
+      "description": "How to turn jargon into clear, helpful UI copy.",
+      "host": "Lea Vogt",
+      "room": "Room 2",
+      "startAt": "2026-09-04T13:45:00+02:00",
+      "endAt": "2026-09-04T14:45:00+02:00",
+      "kind": "session"
+    },
+    {
+      "id": "entry-14",
+      "title": "Usability testing without a budget",
+      "description": "Guerrilla testing methods that help even small teams gather real user feedback.",
+      "host": "Merle Franke",
+      "room": "XING",
+      "startAt": "2026-09-04T14:45:00+02:00",
+      "endAt": "2026-09-04T15:30:00+02:00",
+      "kind": "session"
+    },
+    {
+      "id": "entry-15",
+      "title": "Recognising and avoiding dark patterns",
+      "description": "Where design becomes manipulative and how to spot it in your own product.",
+      "host": "Jonas Reimer",
+      "room": "Room 1",
+      "startAt": "2026-09-04T14:45:00+02:00",
+      "endAt": "2026-09-04T15:30:00+02:00",
+      "kind": "session"
+    },
+    {
+      "id": "entry-16",
+      "title": "Coffee break",
+      "description": "Time to recharge, network and refill your cup.",
+      "host": "",
+      "room": "ZEAL",
+      "startAt": "2026-09-04T15:30:00+02:00",
+      "endAt": "2026-09-04T16:00:00+02:00",
+      "kind": "event"
+    },
+    {
+      "id": "entry-17",
+      "title": "Group photo",
+      "description": "All attendees gather for the official camp photo.",
+      "host": "",
+      "room": "Rooftop terrace",
+      "startAt": "2026-09-04T15:50:00+02:00",
+      "endAt": "2026-09-04T16:00:00+02:00",
+      "kind": "event"
+    },
+    {
+      "id": "entry-18",
+      "title": "From pixels to principles: design tokens explained",
+      "description": "How design tokens bring design and development together, with live examples.",
+      "host": "Sophie Lang",
+      "room": "XING",
+      "startAt": "2026-09-04T16:00:00+02:00",
+      "endAt": "2026-09-04T16:45:00+02:00",
+      "kind": "session"
+    },
+    {
+      "id": "entry-19",
+      "title": "Remote workshops that really work",
+      "description": "Formats and tools for workshops that bring distributed teams along.",
+      "host": "Kai Petersen",
+      "room": "Room 1",
+      "startAt": "2026-09-04T16:00:00+02:00",
+      "endAt": "2026-09-04T16:45:00+02:00",
+      "kind": "session"
+    },
+    {
+      "id": "entry-20",
+      "title": "Wrap-up",
+      "description": "A look back at the day, thanks to all hosts and a preview of what comes next.",
+      "host": "Team UXCamp",
+      "room": "XING",
+      "startAt": "2026-09-04T16:45:00+02:00",
+      "endAt": "2026-09-04T18:00:00+02:00",
+      "kind": "event"
+    },
+    {
+      "id": "entry-21",
+      "title": "Drinks (optional)",
+      "description": "Wind down with drinks on the rooftop terrace.",
+      "host": "",
+      "room": "Rooftop terrace",
+      "startAt": "2026-09-04T18:00:00+02:00",
+      "kind": "event"
+    }
+  ]
+}

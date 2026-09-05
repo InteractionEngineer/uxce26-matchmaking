@@ -1,13 +1,14 @@
 services:
   matchmaking:
     build: .
-    container_name: uxcamp-matchmaking
+    container_name: uxchh26-matchmaking
     volumes:
       - uxcamp-data:/data
     restart: unless-stopped
     environment:
       - NODE_ENV=production
       - DATA_DIR=/data
+      - EVENT=${EVENT:-}
       - LEGAL_NAME=${LEGAL_NAME}
       - LEGAL_STREET=${LEGAL_STREET}
       - LEGAL_CITY=${LEGAL_CITY}

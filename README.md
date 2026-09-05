@@ -1,8 +1,15 @@
-# #uxce26 Matchmaker
+# UXcamp Matchmaker
 
-A web app for attendees of **UX Camp Europe 2026** to find each other based on which sessions they went to. Each participant picks the sessions they attended, optionally adds a LinkedIn URL, and the app ranks other participants by how many sessions they have in common.
+A web app for Barcamp attendees to find each other based on which sessions they went to. Each participant picks the sessions they attended, optionally adds a LinkedIn URL, and the app ranks other participants by how many sessions they have in common.
 
-Live during the event (and for ~30 days after) at **https://uxce26.jona.one**. After that, per the privacy policy, all participant data is wiped.
+One deployment serves one event, selected via the `EVENT` env var. Currently configured:
+
+| Event id | Event | Data format |
+|---|---|---|
+| `uxchh26` (default) | UXcamp Hamburg 2026 | `session-plan-v1` |
+| `uxce26` | UXcamp Europe 2026 (Berlin) | `barcamp-board-v1` |
+
+Live during the event (and for ~30 days after) at **https://uxchh26.jona.one** (`#uxce26` ran at **https://uxce26.jona.one**). After that, per the privacy policy, all participant data is wiped.
 
 ---
 
@@ -39,7 +46,7 @@ It was built during the conference itself: the server and core flow on the night
 | Identity | UUID token in `localStorage`, no auth |
 | Hosting | Docker + Docker Compose, designed to sit behind a reverse proxy |
 
-**Session data** in `uxcamp2026_sessions.json` was scraped from https://planner.berlin/board with AI assistance and frozen for this event. For future runs this step can be detached from the source, generalised across events, and automated further.
+**Session data** lives in `events/`, one file per event, and is normalised by a format adapter at startup (see "Session data" below). The `#uxce26` board was scraped from https://planner.berlin/board with AI assistance; from `#uxchh26` on, the session-plan export is used directly.
 
 ---
 
@@ -51,7 +58,13 @@ It was built during the conference itself: the server and core flow on the night
 ├── package.json
 ├── Dockerfile                    # Builds native deps in a first stage, then copies into a lean runtime image; runs as a non-root user, with a healthcheck
 ├── docker-compose.yml            # Volume for /data, expects external proxy network
-├── uxcamp2026_sessions.json      # The Barcamp board (timeslots × sessions)
+├── lib/
+│   └── board.js                  # Event registry + format adapters → canonical board
+├── events/
+│   ├── index.json                # Which events exist, their names and legal wording
+│   ├── uxchh26.json              # UXcamp Hamburg 2026 — session-plan export
+│   ├── uxce26.json               # UXcamp Europe 2026 — scraped Barcamp board
+│   └── _example.session-plan.json # Reference for the session-plan format
 ├── public/
 │   ├── index.html                # The entire client
 │   └── legal.html                # Imprint + privacy policy, placeholders filled at request time
@@ -80,6 +93,7 @@ Environment variables (all optional):
 |---|---|---|
 | `PORT` | `3000` | HTTP port |
 | `DATA_DIR` | `./data` | Where `uxcamp.db` lives |
+| `EVENT` | `default` from `events/index.json` | Which event this instance serves |
 | `LEGAL_NAME` | — | Substituted into `legal.html` at request time |
 | `LEGAL_STREET` | — | " |
 | `LEGAL_CITY` | — | " |
@@ -111,7 +125,7 @@ JSON throughout. No auth — the token in the URL is the only credential, which 
 
 | Method | Path | Purpose |
 |---|---|---|
-| `GET` | `/api/sessions` | The Barcamp board |
+| `GET` | `/api/sessions` | The normalised board for the active event, plus `event`, `format` and `days` |
 | `GET` | `/api/users/:token` | Load profile by token |
 | `GET` | `/api/users/search/:name` | Case-insensitive exact-name lookup (server endpoint exists; not currently used by the client) |
 | `POST` | `/api/users` | Create (no token in body) or update (token in body) |
@@ -128,12 +142,59 @@ One table, `users`:
 | `token` | TEXT PRIMARY KEY | UUID, server-generated |
 | `name` | TEXT NOT NULL | Free text |
 | `linkedin` | TEXT | Optional URL |
-| `sessions` | TEXT | JSON array of session numbers (`number` field from `uxcamp2026_sessions.json`) |
+| `sessions` | TEXT | JSON array of session ids (strings) |
+| `event` | TEXT NOT NULL | Event id — every query is scoped to it, so one database can hold several events |
 | `updated_at` | TEXT | `datetime('now')` |
 
-Matching is a set intersection on session numbers, sorted by overlap size and then by how many sessions the other person attended (so richer profiles surface higher on ties).
+Matching is a set intersection on session ids within one event, sorted by overlap size and then by how many sessions the other person attended (so richer profiles surface higher on ties). Ids are compared as strings, so rows written before the format change (numeric ids) still line up.
 
-There's a small migration block at the top of `server.js` that drops an older `users` table (from before tokens existed) if it finds one. On a fresh database it doesn't run.
+Two small migration blocks at the top of `server.js` run on startup: one drops an older `users` table from before tokens existed, one adds the `event` column to a table that predates multi-event support (existing rows default to `uxce26`). On a fresh database neither does anything.
+
+---
+
+## Session data
+
+`events/index.json` is the registry. Each entry names a data file, the app's display name and the event-specific wording used in `public/legal.html`:
+
+```json
+{
+  "id": "uxchh26",
+  "dataFile": "uxchh26.json",
+  "name": "#uxchh26 Matchmaker",
+  "title": "UXcamp Hamburg 2026",
+  "hashtag": "#uxchh26",
+  "legal": {
+    "eventName": "UXcamp Hamburg 2026",
+    "attendees": "attendees",
+    "lastUpdated": "September 2026"
+  }
+}
+```
+
+The data file itself is dropped in **as exported** — `lib/board.js` picks the matching adapter by looking at the file's shape and normalises it:
+
+| Adapter | Recognised by | Used for |
+|---|---|---|
+| `barcamp-board-v1` | top-level `timeslots` array | The scraped `#uxce26` board: timeslots holding numbered sessions |
+| `session-plan-v1` | top-level `entries` array | Session-plan export: flat entries with `startAt`/`endAt`, `room`, `host`, `kind` |
+
+Both normalise to the same canonical shape, so the client only ever sees one format:
+
+```
+{ event, format, days: [...], timeslots: [
+  { id, date, label, time, kind: "sessions" | "programme",
+    sessions: [ { id, number, title, type, host, room, description, selectable } ] } ] }
+```
+
+In `session-plan-v1`, entries that share a `startAt` become one timeslot. Times and dates are read straight out of the ISO strings, so the event's local time is preserved regardless of the server's timezone.
+
+Everything the format carries beyond the session itself stays deliberately quiet, because picking a session you sat in only needs its title:
+
+- `"kind": "event"` entries (arrival, breaks, group photo, wrap-up) are not sessions and can't be picked. They render as a thin muted line — time and title, nothing else — and disappear while searching. Delete an entry from the JSON and it's gone from the view entirely.
+- `room` and `host` appear as one quiet grey line under the title, to tell two similar pitches apart.
+- `description` is normalised but not displayed and not searched — it's pitch copy, not something you need in order to tick a box.
+
+**Adding a new event:** drop the export into `events/`, add a registry entry, set `EVENT` on the deployment. **Adding a new format:** add an adapter to `ADAPTERS` in `lib/board.js` — nothing else changes.
 
 ---
 

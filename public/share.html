@@ -54,7 +54,6 @@
       font-size: clamp(15px, 4.4vw, 19px); font-weight: 700; letter-spacing: -.2px;
       word-break: break-all; line-height: 1.3; padding: 0 4px;
     }
-    .url .scheme { color: var(--muted); font-weight: 500; }
 
     .actions { display: flex; flex-direction: column; gap: 10px; width: min(100%, 320px); margin-top: auto; padding-top: 12px; }
     .btn {
@@ -98,7 +97,7 @@
     <img src="/qr.svg" alt="QR code linking to [Share URL]" onerror="document.getElementById('qr').hidden = true">
   </div>
 
-  <div class="url" id="url">[Share URL]</div>
+  <div class="url" id="url" data-url="[Share URL]">[Share URL]</div>
 
   <div class="actions">
     <button class="btn btn-primary hide" id="shareBtn">Share link…</button>
@@ -109,11 +108,11 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  const URL_TEXT = document.getElementById('url').textContent.trim();
-
-  // Grey out the protocol — it is noise for anyone typing the address by hand.
-  document.getElementById('url').innerHTML =
-    URL_TEXT.replace(/^(https?:\/\/)/, '<span class="scheme">$1</span>');
+  // The QR, the copy button and the share sheet all need the absolute URL.
+  // Only the text on screen drops the scheme — it is noise for someone typing
+  // the address off a phone held up across the table.
+  const URL_TEXT = document.getElementById('url').dataset.url.trim();
+  document.getElementById('url').textContent = URL_TEXT.replace(/^https?:\/\//, '');
 
   function toast(msg) {
     const el = document.getElementById('toast');

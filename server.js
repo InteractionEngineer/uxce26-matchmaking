@@ -64,7 +64,13 @@ app.use(express.json());
 // The URL people scan. Behind the reverse proxy the forwarded headers carry the
 // public host; PUBLIC_URL overrides both.
 function shareUrl(req) {
-  if (PUBLIC_URL) return PUBLIC_URL.replace(/\/+$/, '');
+  if (PUBLIC_URL) {
+    // Always absolute: a QR code without a scheme is a search term to most
+    // camera apps, not a link — they offer to google the host instead of
+    // opening it. PUBLIC_URL is hand-written, so don't trust it to carry one.
+    const url = PUBLIC_URL.trim().replace(/\/+$/, '');
+    return /^https?:\/\//i.test(url) ? url : `https://${url}`;
+  }
   const proto = (req.headers['x-forwarded-proto'] || req.protocol || 'http').split(',')[0].trim();
   const host = (req.headers['x-forwarded-host'] || req.headers.host || 'localhost').split(',')[0].trim();
   return `${proto}://${host}`;

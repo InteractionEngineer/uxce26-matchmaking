@@ -159,8 +159,15 @@ app.post('/api/users', (req, res) => {
     }
   }
 
-  // New user — generate a token
-  const newToken = randomUUID();
+  // A token the browser still holds but there is no row for — a lost volume, a
+  // restored backup. Re-create the row under that same token so the person
+  // keeps their identity instead of turning into a second row. Must be a
+  // well-formed UUID nobody else holds; `token` is the primary key.
+  const reusable = typeof token === 'string' &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(token) &&
+    !db.prepare('SELECT 1 FROM users WHERE token = ?').get(token);
+  const newToken = reusable ? token : randomUUID();
+
   db.prepare('INSERT INTO users (token, name, linkedin, sessions, event) VALUES (?, ?, ?, ?, ?)').run(newToken, n, li, s, EVENT_ID);
   const row = db.prepare('SELECT * FROM users WHERE token = ?').get(newToken);
   res.json({ ...row, sessions: JSON.parse(row.sessions) });

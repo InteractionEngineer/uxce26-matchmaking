@@ -154,6 +154,14 @@ One table, `users`:
 
 Matching is a set intersection on session ids within one event, sorted by overlap size and then by how many sessions the other person attended (so richer profiles surface higher on ties). Ids are compared as strings, so rows written before the format change (numeric ids) still line up.
 
+**A deploy must not sign anyone out.** The container restarts on every push, so for a few seconds the API is gone — and the token in `localStorage` is the only identity there is. Three things follow from that:
+
+- A failed `/api/sessions` no longer takes the whole boot with it, and the event id (which decides the storage key namespace) falls back to the last one seen rather than to `default`.
+- A failed profile lookup never clears the token. The browser stays signed in on what it has and retries on the next load.
+- `POST /api/users` re-creates a missing row **under the token the browser sent**, when that is a well-formed UUID nobody holds. A lost volume costs one save instead of an identity plus a duplicate row.
+
+Storage keys are namespaced `<key>:<event>`; the pre-namespace `_token`/`_name`/`_li`/`_picked` are adopted on boot.
+
 Two small migration blocks at the top of `server.js` run on startup: one drops an older `users` table from before tokens existed, one adds the `event` column to a table that predates multi-event support (existing rows default to `uxce26`). On a fresh database neither does anything.
 
 ---

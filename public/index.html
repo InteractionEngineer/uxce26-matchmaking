@@ -325,7 +325,8 @@
   // ── API ───────────────────────────────────────────
   const api = {
     sessions:    ()  => fetch('/api/sessions').then(r => r.json()),
-    userByToken: t   => fetch(`/api/users/${enc(t)}`).then(r => r.ok ? r.json() : null),
+    // Never throws: a failed lookup is a normal state during a deploy.
+    userByToken: t   => fetch(`/api/users/${enc(t)}`).then(r => r.ok ? r.json() : null).catch(() => null),
     usersByName: n   => fetch(`/api/users/search/${enc(n)}`).then(r => r.json()),
     save:        d   => fetch('/api/users', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d) }).then(r => r.json()),
     matches:     t   => fetch(`/api/matches/${enc(t)}`).then(r => r.json()),
@@ -344,9 +345,18 @@
 
   // ── Boot ──────────────────────────────────────────
   window.addEventListener('DOMContentLoaded', async () => {
-    board = await api.sessions();
+    // A push restarts the container, so for a few seconds this call fails. It
+    // used to take the whole boot with it — no board, and no identity either.
+    board = await api.sessions().catch(() => null) || { timeslots: [] };
     slots = board.timeslots;
-    ns    = board.event?.id || 'default';
+
+    // The event id normally comes from the board. When the board is the thing
+    // that is missing, fall back to the last one we saw: it decides which
+    // storage keys we read, so guessing 'default' here would look like a logout.
+    if (board.event?.id) localStorage.setItem('_ns', board.event.id);
+    ns = board.event?.id || localStorage.getItem('_ns') || 'default';
+
+    adoptLegacyKeys();
 
     const stored = localStorage.getItem(k('_picked'));
     if (stored) { try { JSON.parse(stored).forEach(s => picked.add(String(s))); } catch(e) {} }
@@ -356,19 +366,42 @@
     updateBar();
     startBoardPolling();
 
-    const token = localStorage.getItem(k('_token'));
-    if (token) {
-      const user = await api.userByToken(token);
-      if (user) {
-        applyIdentity(user.token, user.name, user.linkedin, user.sessions);
-        toast(`Welcome back, ${user.name}!`);
-      } else {
-        localStorage.removeItem(k('_token'));
-        localStorage.removeItem(k('_name'));
-        localStorage.removeItem(k('_li'));
-      }
-    }
+    await restoreIdentity();
   });
+
+  // The keys were plain `_token`, `_name`, `_li`, `_picked` before they were
+  // namespaced by event. Carry them over instead of orphaning them. Runs before
+  // anything reads a namespaced key.
+  function adoptLegacyKeys() {
+    if (localStorage.getItem(k('_token'))) return;
+    for (const key of ['_token', '_name', '_li', '_picked']) {
+      const value = localStorage.getItem(key);
+      if (value !== null) { localStorage.setItem(k(key), value); localStorage.removeItem(key); }
+    }
+  }
+
+  // The token in localStorage is the only identity there is, so a lookup that
+  // fails must never clear it. It fails on every deploy, for a few seconds.
+  async function restoreIdentity() {
+    const token = localStorage.getItem(k('_token'));
+    if (!token) return;
+
+    const user = await api.userByToken(token);
+    if (user) {
+      applyIdentity(user.token, user.name, user.linkedin, user.sessions);
+      toast(`Welcome back, ${user.name}!`);
+      return;
+    }
+
+    // Server down, or the row is gone. Stay signed in as whoever this browser
+    // says we are; saving sends the token back and re-creates the row under it.
+    const name = localStorage.getItem(k('_name'));
+    if (!name) return;
+    me = { token, name, linkedin: localStorage.getItem(k('_li')) || '' };
+    saved = new Set(picked);
+    updateHeader();
+    updateBar();
+  }
 
   // The board fills up while the camp is running — sessions are pitched all
   // morning — so poll for changes instead of making people reload. `version` is

@@ -29,8 +29,11 @@
 
     /* ── Header ─────────────────────────────────── */
     .header { background: var(--card); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
-    .hdr-inner { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; max-width: 900px; margin: 0 auto; }
+    .hdr-inner { display: flex; align-items: center; gap: 10px; padding: 12px 20px; max-width: 900px; margin: 0 auto; }
+    .hdr-inner .brand { margin-right: auto; }
     .brand { font-size: 15px; font-weight: 800; color: var(--primary); letter-spacing: -.3px; text-decoration: none; }
+    .share-link { display: flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 600; color: var(--muted); text-decoration: none; padding: 5px 9px; border-radius: 8px; border: 1px solid var(--border); }
+    .share-link:hover { color: var(--text); background: var(--bg); }
     .hdr-right { display: flex; align-items: center; gap: 8px; }
     .avatar { width: 30px; height: 30px; background: var(--primary-light); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; flex-shrink: 0; }
     .hdr-name { font-size: 13px; font-weight: 600; }
@@ -217,6 +220,13 @@
   <div class="hdr-inner">
     <a href="/" class="brand">[App name]</a>
     <div class="hdr-right" id="hdrRight"></div>
+    <a href="/share" class="share-link" id="shareLink" title="Share this app">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+        <rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM19 19h2M19 14h2v2"/>
+      </svg>
+      Share
+    </a>
   </div>
   <div class="tabs">
     <button class="tab on" id="tA" onclick="switchTab('sessions')">
@@ -236,7 +246,7 @@
           <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
         </svg>
       </span>
-      <input class="search-in" type="text" id="searchIn" placeholder="Search sessions…" oninput="onSearch(this.value)">
+      <input class="search-in" type="text" id="searchIn" placeholder="Search by number or title…" oninput="onSearch(this.value)">
       <button class="search-clear" id="srchClr" onclick="clearSearch()" aria-label="Clear search">✕</button>
     </div>
     <div id="slots"><div class="loading">Loading sessions…</div></div>
@@ -344,6 +354,7 @@
     bindSlotEvents();
     renderSlots();
     updateBar();
+    startBoardPolling();
 
     const token = localStorage.getItem(k('_token'));
     if (token) {
@@ -358,6 +369,36 @@
       }
     }
   });
+
+  // The board fills up while the camp is running — sessions are pitched all
+  // morning — so poll for changes instead of making people reload. `version` is
+  // a content hash, so an unchanged board costs one small response and no work.
+  function startBoardPolling() {
+    const check = async () => {
+      if (document.hidden) return;
+      try {
+        const next = await api.sessions();
+        if (!next?.timeslots || next.version === board.version) return;
+
+        const before = countSessions(board);
+        const after  = countSessions(next);
+        board = next;
+        slots = next.timeslots;
+        renderSlots();
+        updateSlotCounts();
+        updateBar();
+        if (after > before) {
+          const n = after - before;
+          toast(`${n} new session${n !== 1 ? 's' : ''} on the board`);
+        }
+      } catch {} // offline or server restarting — the next tick tries again
+    };
+    setInterval(check, 60000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
+  }
+
+  const countSessions = b =>
+    (b?.timeslots || []).reduce((n, s) => n + s.sessions.filter(x => x.selectable).length, 0);
 
   // Rows are re-rendered constantly, so listen on the container instead of
   // wiring handlers onto every row.
@@ -411,8 +452,13 @@
   }
 
   // ── Sessions ──────────────────────────────────────
-  const matchesQuery = (s, q) => !q || [s.title, s.type, s.host, s.room, s.number]
-    .some(v => v != null && String(v).toLowerCase().includes(q));
+  function matchesQuery(s, q) {
+    if (!q) return true;
+    // People remember the number, not the title — a numeric query matches it from
+    // the front, so "4" finds #4 and #42 but not "Top 4 mistakes".
+    if (/^\d+$/.test(q) && s.number != null && String(s.number).startsWith(q)) return true;
+    return [s.title, s.type, s.host, s.room].some(v => v != null && String(v).toLowerCase().includes(q));
+  }
 
   const countPicked = slot => slot.sessions.filter(s => s.selectable && picked.has(s.id)).length;
 

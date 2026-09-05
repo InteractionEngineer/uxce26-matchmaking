@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#f8fafc">
+  <title>Share – [App name]</title>
+  <style>
+    :root {
+      --primary: #1d4ed8;
+      --primary-dark: #1e40af;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --r: 12px;
+      --rs: 8px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg); color: var(--text);
+      font-size: 15px; line-height: 1.5;
+      min-height: 100svh; display: flex; flex-direction: column;
+    }
+
+    /* ── Header — same as the app and the legal page ─── */
+    header { background: var(--card); border-bottom: 1px solid var(--border); padding: 12px 20px; }
+    .header-inner { max-width: 720px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .brand { font-size: 15px; font-weight: 800; color: var(--primary); letter-spacing: -.3px; text-decoration: none; }
+    .back { font-size: 14px; color: var(--muted); text-decoration: none; }
+    .back:hover { color: var(--text); }
+
+    main {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      gap: 20px; text-align: center; width: 100%; max-width: 720px;
+      margin: 0 auto; padding: 28px 20px max(20px, env(safe-area-inset-bottom));
+    }
+    .lead { font-size: 18px; font-weight: 700; letter-spacing: -.2px; }
+    .lead-sub { font-size: 14px; color: var(--muted); margin-top: 2px; }
+
+    /* The QR wants to be as large as the screen allows — someone is pointing a
+       camera at it from across a table. */
+    .qr {
+      background: var(--card); border: 1.5px solid var(--border); border-radius: var(--r);
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+      padding: 16px; width: min(88vw, 400px, 54svh); aspect-ratio: 1;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .qr img { width: 100%; height: 100%; display: block; }
+
+    .url {
+      font-size: clamp(15px, 4.4vw, 19px); font-weight: 700; letter-spacing: -.2px;
+      word-break: break-all; line-height: 1.3; padding: 0 4px;
+    }
+    .url .scheme { color: var(--muted); font-weight: 500; }
+
+    .actions { display: flex; flex-direction: column; gap: 10px; width: min(100%, 320px); margin-top: auto; padding-top: 12px; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+      padding: 12px 20px; border-radius: var(--rs); font-size: 15px; font-weight: 600;
+      font-family: inherit; cursor: pointer; border: none; outline: none;
+      transition: all .15s; white-space: nowrap; -webkit-tap-highlight-color: transparent;
+    }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-secondary { background: var(--bg); color: var(--text); border: 1.5px solid var(--border); }
+    .btn-secondary:hover { background: var(--border); }
+    .hide { display: none; }
+
+    .toast {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(12px);
+      background: #1e293b; color: #fff; padding: 9px 20px; border-radius: 10px;
+      font-size: 14px; font-weight: 500; opacity: 0; transition: all .25s;
+      pointer-events: none; z-index: 400; white-space: nowrap;
+    }
+    .toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="/" class="brand">[App name]</a>
+    <a class="back" href="/">← Back to app</a>
+  </div>
+</header>
+
+<main>
+  <div>
+    <div class="lead">Scan to open the app</div>
+    <div class="lead-sub">Point a camera at the code</div>
+  </div>
+
+  <div class="qr">
+    <img src="/qr.svg" alt="QR code linking to [Share URL]">
+  </div>
+
+  <div class="url" id="url">[Share URL]</div>
+
+  <div class="actions">
+    <button class="btn btn-primary hide" id="shareBtn">Share link…</button>
+    <button class="btn btn-secondary" id="copyBtn">Copy link</button>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const URL_TEXT = document.getElementById('url').textContent.trim();
+
+  // Grey out the protocol — it is noise for anyone typing the address by hand.
+  document.getElementById('url').innerHTML =
+    URL_TEXT.replace(/^(https?:\/\/)/, '<span class="scheme">$1</span>');
+
+  function toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('on');
+    setTimeout(() => el.classList.remove('on'), 2000);
+  }
+
+  const shareBtn = document.getElementById('shareBtn');
+  if (navigator.share) {
+    shareBtn.classList.remove('hide');
+    shareBtn.addEventListener('click', () => {
+      navigator.share({ title: document.title.replace(/^Share – /, ''), url: URL_TEXT }).catch(() => {});
+    });
+  }
+
+  document.getElementById('copyBtn').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(URL_TEXT);
+      toast('Link copied');
+    } catch {
+      // Clipboard API needs a secure context — fall back to selecting the text
+      const range = document.createRange();
+      range.selectNodeContents(document.getElementById('url'));
+      const sel = getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      toast('Long-press to copy');
+    }
+  });
+
+  // Keep the screen awake — the phone dimming while someone lines up their
+  // camera is the whole friction we are trying to remove.
+  let lock = null;
+  async function keepAwake() {
+    try { lock = await navigator.wakeLock?.request('screen'); } catch {}
+  }
+  keepAwake();
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && !lock) keepAwake();
+  });
+</script>
+</body>
+</html>

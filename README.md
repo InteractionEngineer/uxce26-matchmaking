@@ -33,6 +33,7 @@ It was built during the conference itself: the server and core flow on the night
 - **Pick your sessions.** Sessions are grouped by day → timeslot → list of pitches, mirroring the Barcamp board. Tap to mark the ones you attended. Each timeslot shows a count.
 - **Save your profile.** Name (required) and LinkedIn URL (optional). On save, the server mints a UUID and the browser stores it in `localStorage` — that token is the only identity, there is no password.
 - **See your matches.** Other participants ranked by number of overlapping sessions — including the full list of sessions each of them attended, the specific overlaps, and their LinkedIn link if provided.
+- **Share it.** `/share` is a full-screen QR code of the app's own URL, plus a native share sheet and a copy button — for handing the app to someone mid-conversation. The QR is rendered server-side, so it works on venue wifi with no CDN in the loop.
 
 ---
 
@@ -67,6 +68,7 @@ It was built during the conference itself: the server and core flow on the night
 │   └── _example.session-plan.json # Reference for the session-plan format
 ├── public/
 │   ├── index.html                # The entire client
+│   ├── share.html                # Full-screen QR code for sharing the app
 │   └── legal.html                # Imprint + privacy policy, placeholders filled at request time
 └── data/                         # SQLite DB (gitignored), created on first run
     └── uxcamp.db
@@ -94,6 +96,8 @@ Environment variables (all optional):
 | `PORT` | `3000` | HTTP port |
 | `DATA_DIR` | `./data` | Where `uxcamp.db` lives |
 | `EVENT` | `default` from `events/index.json` | Which event this instance serves |
+| `POLL_MS` | `60000` | How often the live agenda source is polled |
+| `PUBLIC_URL` | derived from the request | The URL encoded into the share QR code. Only needed if the proxy does not send `X-Forwarded-Proto`/`-Host` |
 | `LEGAL_NAME` | — | Substituted into `legal.html` at request time |
 | `LEGAL_STREET` | — | " |
 | `LEGAL_CITY` | — | " |
@@ -130,6 +134,8 @@ JSON throughout. No auth — the token in the URL is the only credential, which 
 | `GET` | `/api/users/search/:name` | Case-insensitive exact-name lookup (server endpoint exists; not currently used by the client) |
 | `POST` | `/api/users` | Create (no token in body) or update (token in body) |
 | `GET` | `/api/matches/:token` | Other users ranked by session overlap |
+| `GET` | `/share` | Full-screen QR code page |
+| `GET` | `/qr.svg` | QR code for the app's public URL, as SVG |
 
 ---
 
@@ -171,7 +177,9 @@ Two small migration blocks at the top of `server.js` run on startup: one drops a
 }
 ```
 
-The data file itself is dropped in **as exported** — `lib/board.js` picks the matching adapter by looking at the file's shape and normalises it:
+An entry may also carry a `source` URL. That URL is then the single source of truth and `dataFile` drops to a last-resort fallback (see "Live source" below).
+
+The data itself is used **as exported** — `lib/board.js` picks the matching adapter by looking at the payload's shape and normalises it:
 
 | Adapter | Recognised by | Used for |
 |---|---|---|
@@ -192,9 +200,32 @@ Everything the format carries beyond the session itself stays deliberately quiet
 
 - `"kind": "event"` entries (arrival, breaks, group photo, wrap-up) are not sessions and can't be picked. They render as a thin muted line — time and title, nothing else — and disappear while searching. Delete an entry from the JSON and it's gone from the view entirely.
 - `room` and `host` appear as one quiet grey line under the title, to tell two similar pitches apart.
+- `number` is read from a `number`/`sessionNumber`/`no` field, or from a `#42` in front of the title (which is then stripped so it isn't shown twice). Numbers are how people actually refer to a session, so a purely numeric search query matches the number from the front — `4` finds #4 and #42, but not "Top 4 mistakes".
 - `description` is normalised but not displayed and not searched — it's pitch copy, not something you need in order to tick a box.
 
-**Adding a new event:** drop the export into `events/`, add a registry entry, set `EVENT` on the deployment. **Adding a new format:** add an adapter to `ADAPTERS` in `lib/board.js` — nothing else changes.
+**Adding a new event:** point a registry entry at the agenda URL (or drop an export into `events/`), set `EVENT` on the deployment. **Adding a new format:** add an adapter to `ADAPTERS` in `lib/board.js` — nothing else changes.
+
+---
+
+## Live source
+
+A Barcamp board is not finished when the app goes up: sessions get pitched all morning and land on the board while people are already ticking boxes. So when a registry entry has a `source`, the board is pulled from there rather than from the repo.
+
+**Serving.** `/api/sessions` always answers from memory. No request ever waits on the source, and the source being down never returns an error to a user.
+
+**Refreshing.** The store polls `source` every `POLL_MS` with the previous `ETag` in `If-None-Match`, so an unchanged board costs a 304. Each accepted response is snapshotted to `DATA_DIR/<event>.agenda.json`.
+
+**Boot order** — least fresh first, each step overwriting the last one that worked:
+
+```
+events/<dataFile>  →  DATA_DIR/<event>.agenda.json  →  live fetch
+```
+
+The server starts even if all three fail; the client then shows "the board isn't up yet". `events/uxchh26.json` is intentionally empty — it exists so a board can be pasted in by hand if the source is unreachable at a moment when it matters.
+
+**Guards**, because this is third-party data on the critical path: 8s timeout, 2 MB cap, an adapter has to recognise the payload, and **a response with zero sessions never replaces a board that has some**. Losing the programme mid-event is much worse than serving one that is a minute stale.
+
+**Client.** The page polls `/api/sessions` every 60s and compares `version` (a content hash of the normalised board). On a change it re-renders in place — selections, search and scroll survive — and toasts "N new sessions on the board". Polling pauses while the tab is hidden and fires once immediately when it comes back.
 
 ---
 

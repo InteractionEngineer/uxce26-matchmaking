@@ -3,12 +3,15 @@ const Database = require('better-sqlite3');
 const { randomUUID } = require('crypto');
 const path = require('path');
 const fs = require('fs');
-const { loadBoard, eventConfig } = require('./lib/board');
+const QRCode = require('qrcode');
+const { createBoardStore } = require('./lib/board');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const EVENT = process.env.EVENT || null; // null → default from events/index.json
+const POLL_MS = Number(process.env.POLL_MS) || 60000;
+const PUBLIC_URL = process.env.PUBLIC_URL || null; // falls back to the request's own host
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
@@ -38,8 +41,8 @@ if (cols.length > 0 && cols.includes('token') && !cols.includes('event')) {
 }
 db.exec('CREATE INDEX IF NOT EXISTS idx_users_event ON users(event)');
 
-const BOARD = loadBoard(EVENT);
-const CONFIG = eventConfig(EVENT);
+const store = createBoardStore({ eventId: EVENT, dataDir: DATA_DIR, pollMs: POLL_MS });
+const CONFIG = store.config;
 const EVENT_ID = CONFIG.id;
 
 app.use(express.json());
@@ -48,7 +51,16 @@ app.use(express.json());
 // Placeholders in the static pages are filled per request: the [LEGAL_*] ones
 // from env vars, the event ones from events/index.json. Placeholders without a
 // value stay visible as-is.
-function renderHtml(file, res) {
+// The URL people scan. Behind the reverse proxy the forwarded headers carry the
+// public host; PUBLIC_URL overrides both.
+function shareUrl(req) {
+  if (PUBLIC_URL) return PUBLIC_URL.replace(/\/+$/, '');
+  const proto = (req.headers['x-forwarded-proto'] || req.protocol || 'http').split(',')[0].trim();
+  const host = (req.headers['x-forwarded-host'] || req.headers.host || 'localhost').split(',')[0].trim();
+  return `${proto}://${host}`;
+}
+
+function renderHtml(file, req, res) {
   let html = fs.readFileSync(path.join(__dirname, 'public', file), 'utf8');
   const subs = {
     '[First name Last name]': process.env.LEGAL_NAME,
@@ -57,6 +69,7 @@ function renderHtml(file, res) {
     '[Country]': process.env.LEGAL_COUNTRY,
     '[contact@example.com]': process.env.LEGAL_EMAIL,
     '[App name]': CONFIG.name,
+    '[Share URL]': shareUrl(req),
     '[Event name]': CONFIG.legal?.eventName,
     '[Last updated]': CONFIG.legal?.lastUpdated,
   };
@@ -70,12 +83,30 @@ function renderHtml(file, res) {
   res.send(html);
 }
 
-app.get(['/', '/index.html'], (_req, res) => renderHtml('index.html', res));
-app.get('/legal.html', (_req, res) => renderHtml('legal.html', res));
+app.get(['/', '/index.html'], (req, res) => renderHtml('index.html', req, res));
+app.get('/legal.html', (req, res) => renderHtml('legal.html', req, res));
+app.get(['/share', '/share.html'], (req, res) => renderHtml('share.html', req, res));
+
+// QR code for the share page — rendered server-side so the app carries no CDN
+// dependency and keeps working on venue wifi.
+const qrCache = new Map();
+app.get('/qr.svg', async (req, res) => {
+  const url = shareUrl(req);
+  try {
+    if (!qrCache.has(url)) {
+      qrCache.set(url, await QRCode.toString(url, { type: 'svg', margin: 0, errorCorrectionLevel: 'M' }));
+    }
+    res.setHeader('Content-Type', 'image/svg+xml; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.send(qrCache.get(url));
+  } catch (err) {
+    res.status(500).send(`<!-- ${err.message} -->`);
+  }
+});
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.get('/api/sessions', (_req, res) => res.json(BOARD));
+app.get('/api/sessions', (_req, res) => res.json(store.board));
 
 // Load by token (exact match — used on return visit via localStorage)
 app.get('/api/users/:token', (req, res) => {
@@ -139,11 +170,18 @@ app.get('/api/matches/:token', (req, res) => {
   res.json(matches);
 });
 
-app.listen(PORT, () => {
-  const pickable = BOARD.timeslots.reduce((n, s) => n + s.sessions.filter(x => x.selectable).length, 0);
-  console.log(`\n  ${CONFIG.title} — ${CONFIG.name}`);
-  console.log(`  http://localhost:${PORT}`);
-  console.log(`  Event: ${EVENT_ID} · format: ${BOARD.format} · ${BOARD.timeslots.length} timeslots · ${pickable} sessions`);
-  if (pickable === 0) console.log(`  ⚠  No sessions yet — fill in events/${CONFIG.dataFile}`);
-  console.log(`  Data: ${DATA_DIR}\n`);
+store.init().then(() => {
+  store.startPolling();
+
+  app.listen(PORT, () => {
+    const board = store.board;
+    console.log(`\n  ${CONFIG.title} — ${CONFIG.name}`);
+    console.log(`  http://localhost:${PORT}`);
+    console.log(`  Event: ${EVENT_ID} · format: ${board.format} · ${board.timeslots.length} timeslots · ${store.sessionCount} sessions`);
+    console.log(CONFIG.source
+      ? `  Source: ${CONFIG.source} (polled every ${Math.round(POLL_MS / 1000)}s)`
+      : `  Source: events/${CONFIG.dataFile}`);
+    if (store.sessionCount === 0) console.log(`  ⚠  No sessions on the board yet`);
+    console.log(`  Data: ${DATA_DIR}\n`);
+  });
 });

@@ -9,6 +9,8 @@ services:
       - NODE_ENV=production
       - DATA_DIR=/data
       - EVENT=${EVENT:-}
+      - PUBLIC_URL=${PUBLIC_URL:-}
+      - POLL_MS=${POLL_MS:-}
       - LEGAL_NAME=${LEGAL_NAME}
       - LEGAL_STREET=${LEGAL_STREET}
       - LEGAL_CITY=${LEGAL_CITY}

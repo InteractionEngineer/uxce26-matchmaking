@@ -648,14 +648,7 @@
     if (!wasSelected && !query) {
       const idx = slots.findIndex(s => s.sessions.some(sess => sess.id === id));
       const next = idx >= 0 ? slots.slice(idx + 1).find(s => s.sessions.some(sess => sess.selectable)) : null;
-      if (next) {
-        setTimeout(() => {
-          const nextEl = document.getElementById(`slot-${next.id}`);
-          if (!nextEl) return;
-          const hdrH = document.querySelector('.header').offsetHeight;
-          window.scrollTo({ top: nextEl.getBoundingClientRect().top + window.scrollY - hdrH - 12, behavior: 'smooth' });
-        }, 320);
-      }
+      if (next) setTimeout(() => scrollToSlot(next), 320);
     }
 
     updateSlotCounts();
@@ -758,7 +751,8 @@
     btn.disabled = false; btn.textContent = 'Save →';
   });
 
-  async function persist(name, linkedin) {
+  async function persist(name, linkedin, opts = {}) {
+    const { done = 'Sessions saved!', failed = 'Save failed — please try again.', goToMatches = true } = opts;
     try {
       const result = await api.save({ token: me?.token ?? null, name, linkedin, sessions: [...picked] });
       me = { token: result.token, name: result.name, linkedin: result.linkedin };
@@ -768,12 +762,23 @@
       localStorage.setItem(k('_li'), me.linkedin);
       localStorage.setItem(k('_picked'), JSON.stringify([...picked]));
       updateHeader(); updateBar();
-      toast('Sessions saved!');
-      switchTab('matches');
+      toast(done);
+      if (goToMatches) switchTab('matches');
+      return true;
     } catch {
-      toast('Save failed — please try again.');
+      toast(failed);
+      return false;
     }
   }
+
+  // Leaving the board with unsaved ticks used to lose them, or worse, show
+  // matches computed from the old selection. Anyone who already has an identity
+  // can be saved without asking — same quiet toast as the welcome back.
+  const autoSave = () => persist(me.name, me.linkedin, {
+    done: 'Changes saved automatically',
+    failed: 'Could not save automatically — tap Update on the sessions tab.',
+    goToMatches: false,
+  });
 
   // ── Search ────────────────────────────────────────
   function onSearch(v) {
@@ -840,16 +845,24 @@
     const el = document.getElementById(`slot-${slot.id}`);
     if (!el) return;
     const hdrH = document.querySelector('.header').offsetHeight;
-    window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - hdrH - 12, behavior: 'smooth' });
+    window.scrollTo({
+      top: el.getBoundingClientRect().top + window.scrollY - hdrH - 12,
+      behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+    });
   }
 
   // ── Tabs ──────────────────────────────────────────
-  function switchTab(tab) {
+  async function switchTab(tab) {
+    const leavingUnsaved = tab !== 'sessions' && me && !eqSets(picked, saved);
+
     for (const [id, view, name] of [['tA','vSessions','sessions'], ['tB','vMatches','matches'], ['tC','vShare','share']]) {
       document.getElementById(id).classList.toggle('on', tab === name);
       document.getElementById(view).classList.toggle('on', tab === name);
     }
     document.querySelector('.bar').style.display = tab === 'sessions' ? 'flex' : 'none';
+    // Matches are computed server-side from the saved selection, so the save has
+    // to land before they are fetched.
+    if (leavingUnsaved) await autoSave();
     if (tab === 'matches') loadMatches();
     // While searching, the list is filtered down to what was asked for — jumping
     // somewhere else would fight that.

@@ -4,6 +4,7 @@ const { randomUUID } = require('crypto');
 const path = require('path');
 const fs = require('fs');
 const { createBoardStore } = require('./lib/board');
+const { mountAdmin } = require('./lib/admin');
 
 // Loaded lazily: the QR code is a nice-to-have on one page, and a missing module
 // must never be the reason nobody can log their sessions.
@@ -22,6 +23,7 @@ const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const EVENT = process.env.EVENT || null; // null → default from events/index.json
 const POLL_MS = Number(process.env.POLL_MS) || 60000;
 const PUBLIC_URL = process.env.PUBLIC_URL || null; // falls back to the request's own host
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN || null; // unset → no /admin routes at all
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
@@ -56,6 +58,7 @@ const CONFIG = store.config;
 const EVENT_ID = CONFIG.id;
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: false })); // the admin pages post plain forms
 
 // ── HTML templating ────────────────────────────────────────────────────────
 // Placeholders in the static pages are filled per request: the [LEGAL_*] ones
@@ -121,6 +124,10 @@ app.get('/qr.svg', async (req, res) => {
     res.status(500).send(`<!-- ${err.message} -->`);
   }
 });
+
+// Admin routes exist only when a token is configured — otherwise an
+// unconfigured deployment answers 404 and reveals nothing.
+if (ADMIN_TOKEN) mountAdmin(app, { db, eventId: EVENT_ID, config: CONFIG, adminToken: ADMIN_TOKEN, shareUrl });
 
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -202,6 +209,7 @@ app.listen(PORT, () => {
   console.log(`\n  ${CONFIG.title} — ${CONFIG.name}`);
   console.log(`  http://localhost:${PORT}`);
   console.log(`  Event: ${EVENT_ID} · data: ${DATA_DIR}`);
+  console.log(ADMIN_TOKEN ? `  Admin: /admin` : `  Admin: off (no ADMIN_TOKEN)`);
   console.log(CONFIG.source
     ? `  Source: ${CONFIG.source} (polled every ${Math.round(POLL_MS / 1000)}s)`
     : `  Source: events/${CONFIG.dataFile}`);

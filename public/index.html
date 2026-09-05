@@ -358,6 +358,18 @@
 
     adoptLegacyKeys();
 
+    // A recovery link handed out from /admin carries the token in `?t=`. Take
+    // it, drop the cached name so a failed lookup cannot show the wrong person,
+    // and strip the parameter from the URL — it is a credential, and it has no
+    // business sitting in history or in a shared link.
+    const linkToken = new URLSearchParams(location.search).get('t');
+    if (linkToken) {
+      localStorage.setItem(k('_token'), linkToken);
+      localStorage.removeItem(k('_name'));
+      localStorage.removeItem(k('_li'));
+      history.replaceState(null, '', location.pathname);
+    }
+
     const stored = localStorage.getItem(k('_picked'));
     if (stored) { try { JSON.parse(stored).forEach(s => picked.add(String(s))); } catch(e) {} }
 

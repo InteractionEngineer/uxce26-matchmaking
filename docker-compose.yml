@@ -11,6 +11,7 @@ services:
       - EVENT=${EVENT:-}
       - PUBLIC_URL=${PUBLIC_URL:-}
       - POLL_MS=${POLL_MS:-}
+      - ADMIN_TOKEN=${ADMIN_TOKEN:-}
       - LEGAL_NAME=${LEGAL_NAME}
       - LEGAL_STREET=${LEGAL_STREET}
       - LEGAL_CITY=${LEGAL_CITY}

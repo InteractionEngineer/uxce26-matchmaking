@@ -97,6 +97,7 @@ Environment variables (all optional):
 | `DATA_DIR` | `./data` | Where `uxcamp.db` lives |
 | `EVENT` | `default` from `events/index.json` | Which event this instance serves |
 | `POLL_MS` | `60000` | How often the live agenda source is polled |
+| `ADMIN_TOKEN` | — | Enables `/admin`. Unset means the routes do not exist |
 | `PUBLIC_URL` | derived from the request | The URL encoded into the share QR code. Only needed if the proxy does not send `X-Forwarded-Proto`/`-Host` |
 | `LEGAL_NAME` | — | Substituted into `legal.html` at request time |
 | `LEGAL_STREET` | — | " |
@@ -134,10 +135,34 @@ JSON throughout. No auth — the token in the URL is the only credential, which 
 | `GET` | `/api/users/search/:name` | Case-insensitive exact-name lookup (server endpoint exists; not currently used by the client) |
 | `POST` | `/api/users` | Create (no token in body) or update (token in body) |
 | `GET` | `/api/matches/:token` | Other users ranked by session overlap |
+| `GET` | `/admin` | Admin dashboard (only when `ADMIN_TOKEN` is set) |
 | `GET` | `/share` | Full-screen QR code page |
 | `GET` | `/qr.svg` | QR code for the app's public URL, as SVG |
 
 ---
+
+## Admin
+
+`/admin` manages the rows of the active event. It exists **only when `ADMIN_TOKEN` is set** — otherwise the routes are never registered and an unconfigured deployment answers 404, giving away nothing.
+
+```bash
+ADMIN_TOKEN=$(openssl rand -base64 24) docker compose up -d
+```
+
+Sign in with that token; it is then held in a `HttpOnly; SameSite=Strict` cookie scoped to `/admin` for 12 hours (`Secure` too, whenever the request arrived over https). `SameSite=Strict` is also the CSRF defence — no cross-site form post carries the cookie. Every response is `no-store` and `noindex`.
+
+**Three login attempts per hour, per IP.** The limit is checked before the token is, so a correct token during a lockout is refused too — otherwise every request would be a free guess. The counter lives in memory, so restarting the container clears it. That is the way out if you lock yourself out. Putting Basic Auth in front of `/admin` at the proxy is a cheap second, independent layer.
+
+What it does:
+
+| | |
+|---|---|
+| **Participants** | Every row for the event, newest first, with session count and token |
+| **Recovery link** | Copies `<app url>/?t=<token>` for one person. Opening it signs that browser back in as them and strips the parameter from the URL. This is how you rescue someone whose browser lost its token — send it to them and no one else |
+| **Duplicates** | Rows sharing a name, which is normally one person whose browser lost its token. Merging keeps the most recently updated row (most likely the device still in their hand), unions the session ticks, takes the first LinkedIn URL it finds, and deletes the rest. The other devices lose their token — if one of them is still open and saves, it recreates a duplicate |
+| **Delete** | One row, for a deletion request |
+| **Wipe** | Every row of the event, confirmed by typing the event id. The privacy policy promises this within 30 days |
+| **Export CSV** | Token, name, LinkedIn, sessions, timestamp |
 
 ## Data model
 

@@ -76,8 +76,16 @@ function shareUrl(req) {
   }
   const proto = (req.headers['x-forwarded-proto'] || req.protocol || 'http').split(',')[0].trim();
   const host = (req.headers['x-forwarded-host'] || req.headers.host || 'localhost').split(',')[0].trim();
-  return `${proto}://${host}`;
+  // The host arrives from the client and ends up in the page and in the QR
+  // code. Anything that isn't a hostname is someone writing HTML into an
+  // attribute, or pointing the code someone is about to scan at their own
+  // domain — set PUBLIC_URL and neither header is read at all.
+  if (!/^[a-z0-9.-]+(:\d{1,5})?$/i.test(host)) return 'http://localhost';
+  return `${proto === 'https' ? 'https' : 'http'}://${host}`;
 }
+
+const escHtml = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
 function renderHtml(file, req, res) {
   let html = fs.readFileSync(path.join(__dirname, 'public', file), 'utf8');
@@ -92,8 +100,11 @@ function renderHtml(file, req, res) {
     '[Event name]': CONFIG.legal?.eventName,
     '[Last updated]': CONFIG.legal?.lastUpdated,
   };
-  for (const [placeholder, value] of Object.entries(subs)) {
-    if (value) {
+  for (const [placeholder, raw] of Object.entries(subs)) {
+    if (raw) {
+      // Most of these are env vars, but [Share URL] comes off the request —
+      // several of the placeholders sit inside an attribute.
+      const value = escHtml(raw);
       html = html.split(`<span class="placeholder">${placeholder}</span>`).join(value);
       html = html.split(placeholder).join(value);
     }
@@ -114,10 +125,14 @@ app.get('/qr.svg', async (req, res) => {
   if (!lib) return res.status(503).send('<!-- qrcode module unavailable -->');
   try {
     if (!qrCache.has(url)) {
+      if (qrCache.size > 32) qrCache.clear(); // keyed by a request header — don't let it grow
       qrCache.set(url, await lib.toString(url, { type: 'svg', margin: 0, errorCorrectionLevel: 'M' }));
     }
     res.setHeader('Content-Type', 'image/svg+xml; charset=utf-8');
-    res.setHeader('Cache-Control', 'public, max-age=3600');
+    // Private: the code depends on the host of the request, so a shared cache
+    // must not hand one visitor's code to the next.
+    res.setHeader('Cache-Control', 'private, max-age=3600');
+    res.setHeader('Vary', 'X-Forwarded-Host, X-Forwarded-Proto');
     res.send(qrCache.get(url));
   } catch (err) {
     res.status(500).send(`<!-- ${err.message} -->`);

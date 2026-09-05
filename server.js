@@ -18,6 +18,11 @@ function qrcode() {
 }
 
 const app = express();
+// The reverse proxy shares a docker network with us (see docker-compose.yml),
+// so trust X-Forwarded-For only when the connection itself came from a private
+// address. `1` would trust whoever is on the socket, which is the client again
+// as soon as the port is exposed directly.
+app.set('trust proxy', ['loopback', 'uniquelocal']);
 const PORT = process.env.PORT || 3000;
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const EVENT = process.env.EVENT || null; // null → default from events/index.json

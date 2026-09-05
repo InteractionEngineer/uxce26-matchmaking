@@ -149,7 +149,7 @@ ADMIN_TOKEN=$(openssl rand -base64 24) docker compose up -d
 
 Sign in with that token; it is then held in a `HttpOnly; SameSite=Strict` cookie scoped to `/admin` for 12 hours (`Secure` too, whenever the request arrived over https). `SameSite=Strict` is also the CSRF defence — no cross-site form post carries the cookie. Every response is `no-store` and `noindex`.
 
-**Three login attempts per hour, per IP.** The limit is checked before the token is, so a correct token during a lockout is refused too — otherwise every request would be a free guess. The counter lives in memory, so restarting the container clears it. That is the way out if you lock yourself out. Putting Basic Auth in front of `/admin` at the proxy is a cheap second, independent layer.
+**Three login attempts per hour, per IP, and twenty in total.** The per-IP counter uses `req.ip`, which is only taken from `X-Forwarded-For` when the connection came from a private address — otherwise rotating the header would make the limit free to skip. The total is the ceiling that does not depend on the address being true at all. Both are checked before the token is, so a correct token during a lockout is refused too — otherwise every request would be a free guess. The counters live in memory, so restarting the container clears them. That is the way out if you lock yourself out. Putting Basic Auth in front of `/admin` at the proxy is a cheap second, independent layer.
 
 What it does:
 

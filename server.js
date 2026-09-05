@@ -139,12 +139,6 @@ app.get('/api/users/:token', (req, res) => {
   res.json({ ...row, sessions: JSON.parse(row.sessions) });
 });
 
-// Search by name (case-insensitive — used for cross-device recovery)
-app.get('/api/users/search/:name', (req, res) => {
-  const rows = db.prepare('SELECT * FROM users WHERE lower(name) = lower(?) AND event = ?').all(req.params.name, EVENT_ID);
-  res.json(rows.map(r => ({ ...r, sessions: JSON.parse(r.sessions) })));
-});
-
 // Create (no token) or update (token provided)
 app.post('/api/users', (req, res) => {
   const { token, name, linkedin = '', sessions = [] } = req.body;

@@ -360,7 +360,6 @@
     sessions:    ()  => fetch('/api/sessions').then(r => r.json()),
     // Never throws: a failed lookup is a normal state during a deploy.
     userByToken: t   => fetch(`/api/users/${enc(t)}`).then(r => r.ok ? r.json() : null).catch(() => null),
-    usersByName: n   => fetch(`/api/users/search/${enc(n)}`).then(r => r.json()),
     // An error status has to throw: its body carries no row, and treating it as
     // one would hand `me` an undefined token.
     save:        async d => {

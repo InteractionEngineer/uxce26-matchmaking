@@ -132,7 +132,6 @@ JSON throughout. No auth — the token in the URL is the only credential, which 
 |---|---|---|
 | `GET` | `/api/sessions` | The normalised board for the active event, plus `event`, `format` and `days` |
 | `GET` | `/api/users/:token` | Load profile by token |
-| `GET` | `/api/users/search/:name` | Case-insensitive exact-name lookup (server endpoint exists; not currently used by the client) |
 | `POST` | `/api/users` | Create (no token in body) or update (token in body) |
 | `GET` | `/api/matches/:token` | Other users ranked by session overlap |
 | `GET` | `/admin` | Admin dashboard (only when `ADMIN_TOKEN` is set) |

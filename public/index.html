@@ -383,6 +383,10 @@
   }
 
   // ── Boot ──────────────────────────────────────────
+  // We decide where a reload lands (see jumpToRelevantSlot), so the browser must
+  // not put its remembered position on top of it.
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
   window.addEventListener('DOMContentLoaded', async () => {
     // A push restarts the container, so for a few seconds this call fails. It
     // used to take the whole boot with it — no board, and no identity either.
@@ -418,6 +422,11 @@
     startBoardPolling();
 
     await restoreIdentity();
+
+    // The same rule as switching to the tab, but after the identity restore, so
+    // it sees the picks the server sent back and not just this browser's cache.
+    // No animation here — the page has no previous position to carry over.
+    jumpToRelevantSlot('auto');
   });
 
   // The keys were plain `_token`, `_name`, `_li`, `_picked` before they were
@@ -466,6 +475,17 @@
 
         const before = countSessions(board);
         const after  = countSessions(next);
+
+        // A session can also disappear — pitched, then pulled. The tick for it
+        // would vanish from the list while still counting in the badge, so drop
+        // it and say so. Only ids that were on the board a moment ago count:
+        // anything else is a leftover from another event's storage.
+        const wasOnBoard = new Set(board.timeslots.flatMap(sl => sl.sessions.map(x => x.id)));
+        const isOnBoard  = new Set(next.timeslots.flatMap(sl => sl.sessions.map(x => x.id)));
+        const lost = [...picked].filter(id => wasOnBoard.has(id) && !isOnBoard.has(id));
+        lost.forEach(id => picked.delete(id));
+        if (lost.length) localStorage.setItem(k('_picked'), JSON.stringify([...picked]));
+
         board = next;
         slots = next.timeslots;
         renderSlots();
@@ -475,6 +495,7 @@
           const n = after - before;
           toast(`${n} new session${n !== 1 ? 's' : ''} on the board`);
         }
+        if (lost.length) toast(`${lost.length} of your picks ${lost.length === 1 ? 'is' : 'are'} off the board`);
       } catch {} // offline or server restarting — the next tick tries again
     };
     setInterval(check, 60000);
@@ -527,7 +548,12 @@
     }
   }
 
+  // The overlay does double duty: first save, and later name changes. Which one
+  // it is decides what the toast says and whether matches open afterwards.
+  let editingProfile = false;
+
   function editProfile() {
+    editingProfile = true;
     document.getElementById('sName').value = me.name;
     document.getElementById('sLi').value = me.linkedin || '';
     document.getElementById('saveMdBtn').textContent = 'Update →';
@@ -752,13 +778,13 @@
 
     const btn = document.getElementById('saveMdBtn');
     btn.disabled = true; btn.textContent = '…';
-    await persist(name, li);
+    await persist(name, li, editingProfile ? { done: 'Profile updated', goToMatches: false } : {});
     closeOverlay('saveOverlay');
     btn.disabled = false; btn.textContent = 'Save →';
   });
 
   async function persist(name, linkedin, opts = {}) {
-    const { done = 'Sessions saved!', failed = 'Save failed — please try again.', goToMatches = true } = opts;
+    const { done = 'Sessions saved!', failed = 'Save failed — try again', goToMatches = true } = opts;
     try {
       const result = await api.save({ token: me?.token ?? null, name, linkedin, sessions: [...picked] });
       me = { token: result.token, name: result.name, linkedin: result.linkedin };
@@ -772,7 +798,9 @@
       if (goToMatches) switchTab('matches');
       return true;
     } catch {
-      toast(failed);
+      // Venue wifi, not a broken app: the ticks are in localStorage either way,
+      // and the next save or the online handler picks them up.
+      toast(navigator.onLine ? failed : 'Offline — kept on this device');
       return false;
     }
   }
@@ -782,8 +810,15 @@
   // can be saved without asking — same quiet toast as the welcome back.
   const autoSave = () => persist(me.name, me.linkedin, {
     done: 'Changes saved automatically',
-    failed: 'Could not save automatically — tap Update on the sessions tab.',
+    failed: 'Not saved — tap Update',
     goToMatches: false,
+  });
+
+  // 4. The wifi at a camp drops all day. When it comes back, push whatever never
+  // made it instead of waiting for the next tab switch.
+  window.addEventListener('online', () => {
+    if (!me || eqSets(picked, saved)) return;
+    persist(me.name, me.linkedin, { done: 'Back online — saved', goToMatches: false });
   });
 
   // ── Search ────────────────────────────────────────
@@ -849,13 +884,27 @@
     return { slot: upcoming || todays[todays.length - 1], reason: upcoming ? 'next' : 'last' };
   }
 
-  function scrollToSlot(slot) {
+  // Called on the sessions tab and once on load. Measuring right after the view
+  // was un-hidden is fine: reading the slot's box forces the layout the browser
+  // still owes us.
+  function jumpToRelevantSlot(behavior) {
+    // While searching, the list is filtered down to what was asked for — jumping
+    // somewhere else would fight that.
+    if (query) return;
+    const target = slotScrollTarget();
+    if (!target) return;
+    scrollToSlot(target.slot, behavior);
+    // Landing somewhere other than the top needs a reason, or it reads as a glitch.
+    if (target.reason === 'now') toast(`Jumped to ${target.slot.label} — on right now`);
+  }
+
+  function scrollToSlot(slot, behavior) {
     const el = document.getElementById(`slot-${slot.id}`);
     if (!el) return;
     const hdrH = document.querySelector('.header').offsetHeight;
     window.scrollTo({
       top: el.getBoundingClientRect().top + window.scrollY - hdrH - 12,
-      behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      behavior: behavior || (matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'),
     });
   }
 
@@ -874,16 +923,7 @@
     if (tab === 'matches') loadMatches();
     // While searching, the list is filtered down to what was asked for — jumping
     // somewhere else would fight that.
-    if (tab === 'sessions' && !query) {
-      // Measuring right after the view was un-hidden is fine: reading the slot's
-      // box forces the layout the browser still owes us.
-      const target = slotScrollTarget();
-      if (target) {
-        scrollToSlot(target.slot);
-        // Landing somewhere other than the top needs a reason, or it reads as a glitch.
-        if (target.reason === 'now') toast(`Jumped to ${target.slot.label} — on right now`);
-      }
-    }
+    if (tab === 'sessions') jumpToRelevantSlot();
     // Only hold the screen awake while the code is actually on screen.
     tab === 'share' ? keepAwake() : releaseWake();
   }
@@ -995,7 +1035,7 @@
   function openOverlay(id)  { document.getElementById(id).classList.add('on'); }
   function closeOverlay(id) {
     document.getElementById(id).classList.remove('on');
-    if (id === 'saveOverlay') document.getElementById('saveMdBtn').textContent = 'Save →';
+    if (id === 'saveOverlay') { document.getElementById('saveMdBtn').textContent = 'Save →'; editingProfile = false; }
   }
   function overlayClick(e, id) { if (e.target === e.currentTarget) closeOverlay(id); }
   document.addEventListener('keydown', e => {
@@ -1003,11 +1043,27 @@
   });
 
   // ── Toast ─────────────────────────────────────────
+  // Two things can now have something to say at once — a welcome back and the
+  // jump to the current slot. Queue them instead of letting the second one
+  // overwrite the first mid-sentence.
+  const toastQueue = [];
+  let toastTimer = null;
+
   function toast(msg) {
+    toastQueue.push(msg);
+    if (!toastTimer) showNextToast();
+  }
+
+  function showNextToast() {
     const el = document.getElementById('toast');
+    const msg = toastQueue.shift();
+    if (msg === undefined) { toastTimer = null; return; }
     el.textContent = msg;
     el.classList.add('on');
-    setTimeout(() => el.classList.remove('on'), 2500);
+    toastTimer = setTimeout(() => {
+      el.classList.remove('on');
+      toastTimer = setTimeout(showNextToast, 300); // let it fade before the next
+    }, 2500);
   }
 </script>
 </body>

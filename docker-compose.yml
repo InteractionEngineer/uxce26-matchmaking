@@ -1,7 +1,7 @@
 services:
   matchmaking:
     build: .
-    container_name: uxchh26-matchmaking
+    container_name: uxcamp-matchmaking
     volumes:
       - uxcamp-data:/data
     restart: unless-stopped

@@ -3,8 +3,18 @@ const Database = require('better-sqlite3');
 const { randomUUID } = require('crypto');
 const path = require('path');
 const fs = require('fs');
-const QRCode = require('qrcode');
 const { createBoardStore } = require('./lib/board');
+
+// Loaded lazily: the QR code is a nice-to-have on one page, and a missing module
+// must never be the reason nobody can log their sessions.
+let qrLib;
+function qrcode() {
+  if (qrLib === undefined) {
+    try { qrLib = require('qrcode'); }
+    catch (err) { qrLib = null; console.error(`  ⚠  qrcode module unavailable (${err.message}) — /share works without the code`); }
+  }
+  return qrLib;
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -92,9 +102,11 @@ app.get(['/share', '/share.html'], (req, res) => renderHtml('share.html', req, r
 const qrCache = new Map();
 app.get('/qr.svg', async (req, res) => {
   const url = shareUrl(req);
+  const lib = qrcode();
+  if (!lib) return res.status(503).send('<!-- qrcode module unavailable -->');
   try {
     if (!qrCache.has(url)) {
-      qrCache.set(url, await QRCode.toString(url, { type: 'svg', margin: 0, errorCorrectionLevel: 'M' }));
+      qrCache.set(url, await lib.toString(url, { type: 'svg', margin: 0, errorCorrectionLevel: 'M' }));
     }
     res.setHeader('Content-Type', 'image/svg+xml; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=3600');
@@ -170,18 +182,23 @@ app.get('/api/matches/:token', (req, res) => {
   res.json(matches);
 });
 
-store.init().then(() => {
-  store.startPolling();
-
-  app.listen(PORT, () => {
-    const board = store.board;
-    console.log(`\n  ${CONFIG.title} — ${CONFIG.name}`);
-    console.log(`  http://localhost:${PORT}`);
-    console.log(`  Event: ${EVENT_ID} · format: ${board.format} · ${board.timeslots.length} timeslots · ${store.sessionCount} sessions`);
-    console.log(CONFIG.source
-      ? `  Source: ${CONFIG.source} (polled every ${Math.round(POLL_MS / 1000)}s)`
-      : `  Source: events/${CONFIG.dataFile}`);
-    if (store.sessionCount === 0) console.log(`  ⚠  No sessions on the board yet`);
-    console.log(`  Data: ${DATA_DIR}\n`);
-  });
+// Listen first, load the board after. Whatever goes wrong with the board — an
+// unreachable source, a malformed file — must degrade to an empty board behind a
+// working server, never to a process that never binds and a 502 at the proxy.
+app.listen(PORT, () => {
+  console.log(`\n  ${CONFIG.title} — ${CONFIG.name}`);
+  console.log(`  http://localhost:${PORT}`);
+  console.log(`  Event: ${EVENT_ID} · data: ${DATA_DIR}`);
+  console.log(CONFIG.source
+    ? `  Source: ${CONFIG.source} (polled every ${Math.round(POLL_MS / 1000)}s)`
+    : `  Source: events/${CONFIG.dataFile}`);
 });
+
+store.init()
+  .then(() => {
+    store.startPolling();
+    const board = store.board;
+    console.log(`  Board: ${board.format} · ${board.timeslots.length} timeslots · ${store.sessionCount} sessions`);
+    if (store.sessionCount === 0) console.log(`  ⚠  No sessions on the board yet`);
+  })
+  .catch(err => console.error(`  ⚠  Board init failed (${err.message}) — serving an empty board`));

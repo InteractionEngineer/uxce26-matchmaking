@@ -68,6 +68,7 @@
     .btn-secondary { background: var(--bg); color: var(--text); border: 1.5px solid var(--border); }
     .btn-secondary:hover { background: var(--border); }
     .hide { display: none; }
+    [hidden] { display: none !important; }
 
     .toast {
       position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(12px);
@@ -93,8 +94,8 @@
     <div class="lead-sub">Point a camera at the code</div>
   </div>
 
-  <div class="qr">
-    <img src="/qr.svg" alt="QR code linking to [Share URL]">
+  <div class="qr" id="qr">
+    <img src="/qr.svg" alt="QR code linking to [Share URL]" onerror="document.getElementById('qr').hidden = true">
   </div>
 
   <div class="url" id="url">[Share URL]</div>

@@ -361,7 +361,13 @@
     // Never throws: a failed lookup is a normal state during a deploy.
     userByToken: t   => fetch(`/api/users/${enc(t)}`).then(r => r.ok ? r.json() : null).catch(() => null),
     usersByName: n   => fetch(`/api/users/search/${enc(n)}`).then(r => r.json()),
-    save:        d   => fetch('/api/users', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d) }).then(r => r.json()),
+    // An error status has to throw: its body carries no row, and treating it as
+    // one would hand `me` an undefined token.
+    save:        async d => {
+      const r = await fetch('/api/users', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d) });
+      if (!r.ok) throw new Error('save-failed');
+      return r.json();
+    },
     matches:     t   => fetch(`/api/matches/${enc(t)}`).then(r => r.json()),
   };
   const enc = s => encodeURIComponent(s);
@@ -815,12 +821,14 @@
     return { start, end: minutesOf(to) ?? start + 60 };
   }
 
+  // Returns { slot, reason } — the reason is what the toast is for: landing on
+  // the slot that is running right now is worth saying out loud, the rest is not.
   function slotScrollTarget() {
     const pickable = slots.filter(s => s.sessions.some(x => x.selectable));
     if (!pickable.length) return null;
 
     const unanswered = pickable.find(s => countPicked(s) === 0);
-    if (unanswered) return unanswered;
+    if (unanswered) return { slot: unanswered, reason: 'unanswered' };
 
     // Nothing left to fill in — fall back to the time of day, but only while the
     // camp is actually running. On any other day there is no "now" on the board.
@@ -834,11 +842,11 @@
 
     const mins = now.getHours() * 60 + now.getMinutes();
     const running = todays.find(s => { const r = slotRange(s); return r && mins >= r.start && mins < r.end; });
-    if (running) return running;
+    if (running) return { slot: running, reason: 'now' };
 
     const upcoming = todays.find(s => { const r = slotRange(s); return r && r.start >= mins; });
     // Past the last session, the nearest slot is the one that just ended.
-    return upcoming || todays[todays.length - 1];
+    return { slot: upcoming || todays[todays.length - 1], reason: upcoming ? 'next' : 'last' };
   }
 
   function scrollToSlot(slot) {
@@ -867,9 +875,14 @@
     // While searching, the list is filtered down to what was asked for — jumping
     // somewhere else would fight that.
     if (tab === 'sessions' && !query) {
+      // Measuring right after the view was un-hidden is fine: reading the slot's
+      // box forces the layout the browser still owes us.
       const target = slotScrollTarget();
-      // The view is only just visible, so measure after the browser has laid it out.
-      if (target) requestAnimationFrame(() => scrollToSlot(target));
+      if (target) {
+        scrollToSlot(target.slot);
+        // Landing somewhere other than the top needs a reason, or it reads as a glitch.
+        if (target.reason === 'now') toast(`Jumped to ${target.slot.label} — on right now`);
+      }
     }
     // Only hold the screen awake while the code is actually on screen.
     tab === 'share' ? keepAwake() : releaseWake();

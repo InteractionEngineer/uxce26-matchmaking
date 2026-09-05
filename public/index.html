@@ -788,6 +788,61 @@
     document.getElementById('searchIn').focus();
   }
 
+  // ── Where to land on the sessions tab ─────────────
+  // Coming back to the board, the useful place is the slot that still needs an
+  // answer. If every slot has one, show where the day currently is instead.
+  const ymdLocal = d =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+  // "10:00–14:45" → 600. Slot times are the event's own local time, so they are
+  // compared as plain minutes, never through Date.
+  const minutesOf = hhmm => {
+    const m = /^(\d{1,2}):(\d{2})/.exec((hhmm || '').trim());
+    return m ? +m[1] * 60 + +m[2] : null;
+  };
+
+  function slotRange(slot) {
+    const [from, to] = (slot.time || '').split(/[–—-]/);
+    const start = minutesOf(from);
+    if (start == null) return null;
+    // A slot without an end time still occupies the board for a while — an hour
+    // is close enough to keep "now" inside it.
+    return { start, end: minutesOf(to) ?? start + 60 };
+  }
+
+  function slotScrollTarget() {
+    const pickable = slots.filter(s => s.sessions.some(x => x.selectable));
+    if (!pickable.length) return null;
+
+    const unanswered = pickable.find(s => countPicked(s) === 0);
+    if (unanswered) return unanswered;
+
+    // Nothing left to fill in — fall back to the time of day, but only while the
+    // camp is actually running. On any other day there is no "now" on the board.
+    const now = new Date();
+    const today = ymdLocal(now);
+    const days = board?.days || [];
+    if (days.length && !days.includes(today)) return null;
+
+    const todays = pickable.filter(s => !s.date || s.date === today);
+    if (!todays.length) return null;
+
+    const mins = now.getHours() * 60 + now.getMinutes();
+    const running = todays.find(s => { const r = slotRange(s); return r && mins >= r.start && mins < r.end; });
+    if (running) return running;
+
+    const upcoming = todays.find(s => { const r = slotRange(s); return r && r.start >= mins; });
+    // Past the last session, the nearest slot is the one that just ended.
+    return upcoming || todays[todays.length - 1];
+  }
+
+  function scrollToSlot(slot) {
+    const el = document.getElementById(`slot-${slot.id}`);
+    if (!el) return;
+    const hdrH = document.querySelector('.header').offsetHeight;
+    window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - hdrH - 12, behavior: 'smooth' });
+  }
+
   // ── Tabs ──────────────────────────────────────────
   function switchTab(tab) {
     for (const [id, view, name] of [['tA','vSessions','sessions'], ['tB','vMatches','matches'], ['tC','vShare','share']]) {
@@ -796,6 +851,13 @@
     }
     document.querySelector('.bar').style.display = tab === 'sessions' ? 'flex' : 'none';
     if (tab === 'matches') loadMatches();
+    // While searching, the list is filtered down to what was asked for — jumping
+    // somewhere else would fight that.
+    if (tab === 'sessions' && !query) {
+      const target = slotScrollTarget();
+      // The view is only just visible, so measure after the browser has laid it out.
+      if (target) requestAnimationFrame(() => scrollToSlot(target));
+    }
     // Only hold the screen awake while the code is actually on screen.
     tab === 'share' ? keepAwake() : releaseWake();
   }

@@ -41,11 +41,25 @@
     .btn-ghost:hover { background: var(--bg); color: var(--text); }
 
     /* ── Tabs ────────────────────────────────────── */
-    .tabs { display: flex; padding: 0 20px; max-width: 900px; margin: 0 auto; }
-    .tab { padding: 10px 16px; font-size: 14px; font-weight: 600; color: var(--muted); cursor: pointer; border: none; background: none; font-family: inherit; border-bottom: 2px solid transparent; transition: all .15s; display: flex; align-items: center; gap: 7px; }
+    .tabs { display: flex; padding: 0 12px; max-width: 900px; margin: 0 auto; }
+    /* Three tabs have to stay on one line on a narrow phone. */
+    .tab { padding: 10px clamp(9px, 3.2vw, 16px); font-size: 14px; font-weight: 600; color: var(--muted); cursor: pointer; border: none; background: none; font-family: inherit; border-bottom: 2px solid transparent; transition: all .15s; display: flex; align-items: center; gap: 7px; white-space: nowrap; }
     .tab:hover { color: var(--text); }
     .tab.on { color: var(--primary); border-bottom-color: var(--primary); }
     .tab-badge { background: var(--primary-light); color: var(--primary); font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 10px; }
+
+    /* ── Share view ──────────────────────────────── */
+    .share-pane { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 22px; padding: 8px 0 24px; }
+    .share-lead { font-size: 21px; font-weight: 800; letter-spacing: -.3px; line-height: 1.25; max-width: 420px; }
+    .share-sub { font-size: 14px; color: var(--muted); margin-top: 4px; max-width: 380px; }
+    /* As large as the screen allows — someone is pointing a camera at it from
+       across a table. */
+    .qr { background: var(--card); border: 1.5px solid var(--border); border-radius: var(--r); box-shadow: 0 1px 3px rgba(0,0,0,.06); padding: 16px; width: min(88vw, 380px, 52svh); aspect-ratio: 1; display: flex; align-items: center; justify-content: center; }
+    .qr img { width: 100%; height: 100%; display: block; }
+    .share-actions { display: flex; flex-direction: column; gap: 10px; width: min(100%, 320px); }
+    .share-actions .btn { padding: 12px 20px; }
+    /* Off screen, but still selectable: the clipboard fallback copies from it. */
+    .offscreen { position: absolute; left: -9999px; opacity: 0; width: 1px; height: 1px; }
 
     /* ── Main ────────────────────────────────────── */
     .main { max-width: 900px; margin: 0 auto; padding: 24px 20px 120px; width: 100%; }
@@ -220,19 +234,13 @@
   <div class="hdr-inner">
     <a href="/" class="brand">[App name]</a>
     <div class="hdr-right" id="hdrRight"></div>
-    <a href="/share" class="share-link" id="shareLink" title="Share this app">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-        <rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM19 19h2M19 14h2v2"/>
-      </svg>
-      Share
-    </a>
   </div>
   <div class="tabs">
     <button class="tab on" id="tA" onclick="switchTab('sessions')">
       My Sessions <span class="tab-badge" id="tabBadge">0</span>
     </button>
     <button class="tab" id="tB" onclick="switchTab('matches')">Find Matches</button>
+    <button class="tab" id="tC" onclick="switchTab('share')">Share</button>
   </div>
 </header>
 
@@ -267,6 +275,31 @@
       <button class="btn-refresh" onclick="loadMatches()">↻ Refresh</button>
     </div>
     <div id="mxList"><div class="loading">Loading…</div></div>
+    <div class="footer">
+      <a href="/legal.html#legal-notice">Legal Notice</a> ·
+      <a href="/legal.html#privacy">Privacy Policy</a> · v 0.0.42
+    </div>
+  </div>
+
+  <!-- Share view -->
+  <div class="view" id="vShare">
+    <div class="share-pane">
+      <div>
+        <h2 class="share-lead">Connect with people from the Barcamp</h2>
+        <div class="share-sub">Scan to open the app and compare your sessions</div>
+      </div>
+
+      <div class="qr" id="qrBox">
+        <img src="/qr.svg" alt="QR code linking to [Share URL]" onerror="document.getElementById('qrBox').hidden = true">
+      </div>
+
+      <div class="share-actions">
+        <button class="btn btn-primary hide" id="shareBtn">Share link…</button>
+        <button class="btn btn-secondary" id="copyBtn">Copy link</button>
+      </div>
+
+      <input class="offscreen" id="shareUrl" value="[Share URL]" readonly tabindex="-1" aria-hidden="true">
+    </div>
     <div class="footer">
       <a href="/legal.html#legal-notice">Legal Notice</a> ·
       <a href="/legal.html#privacy">Privacy Policy</a> · v 0.0.42
@@ -665,6 +698,45 @@
   const eqSets = (a, b) => a.size === b.size && [...a].every(x => b.has(x));
 
   // ── Save flow ─────────────────────────────────────
+  // ── Share ─────────────────────────────────────────
+  const SHARE_URL = document.getElementById('shareUrl').value.trim();
+
+  if (navigator.share) {
+    document.getElementById('shareBtn').classList.remove('hide');
+    document.getElementById('shareBtn').addEventListener('click', () => {
+      navigator.share({ title: document.title, url: SHARE_URL }).catch(() => {});
+    });
+  }
+
+  document.getElementById('copyBtn').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(SHARE_URL);
+      toast('Link copied');
+    } catch {
+      // The Clipboard API needs a secure context; over plain http it throws.
+      const field = document.getElementById('shareUrl');
+      field.select();
+      field.setSelectionRange(0, field.value.length); // iOS ignores select() on readonly
+      toast(document.execCommand('copy') ? 'Link copied' : 'Could not copy the link');
+    }
+  });
+
+  // The phone dimming while someone lines up their camera is the whole friction
+  // we are trying to remove — but only hold the lock on the share tab.
+  let wakeLock = null;
+  async function keepAwake() {
+    if (wakeLock) return;
+    try { wakeLock = await navigator.wakeLock?.request('screen') || null; } catch {}
+  }
+  function releaseWake() {
+    wakeLock?.release().catch(() => {});
+    wakeLock = null;
+  }
+  // A screen lock drops the wake lock; re-take it if we are still on the tab.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && document.getElementById('vShare').classList.contains('on')) keepAwake();
+  });
+
   async function onSave() {
     if (me) { await persist(me.name, me.linkedin); return; }
     openOverlay('saveOverlay');
@@ -718,12 +790,14 @@
 
   // ── Tabs ──────────────────────────────────────────
   function switchTab(tab) {
-    document.getElementById('tA').classList.toggle('on', tab === 'sessions');
-    document.getElementById('tB').classList.toggle('on', tab === 'matches');
-    document.getElementById('vSessions').classList.toggle('on', tab === 'sessions');
-    document.getElementById('vMatches').classList.toggle('on', tab === 'matches');
+    for (const [id, view, name] of [['tA','vSessions','sessions'], ['tB','vMatches','matches'], ['tC','vShare','share']]) {
+      document.getElementById(id).classList.toggle('on', tab === name);
+      document.getElementById(view).classList.toggle('on', tab === name);
+    }
     document.querySelector('.bar').style.display = tab === 'sessions' ? 'flex' : 'none';
     if (tab === 'matches') loadMatches();
+    // Only hold the screen awake while the code is actually on screen.
+    tab === 'share' ? keepAwake() : releaseWake();
   }
 
   // ── Matches ───────────────────────────────────────

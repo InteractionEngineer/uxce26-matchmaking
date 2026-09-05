@@ -12,7 +12,7 @@ let qrLib;
 function qrcode() {
   if (qrLib === undefined) {
     try { qrLib = require('qrcode'); }
-    catch (err) { qrLib = null; console.error(`  ⚠  qrcode module unavailable (${err.message}) — /share works without the code`); }
+    catch (err) { qrLib = null; console.error(`  ⚠  qrcode module unavailable (${err.message}) — the share tab works without the code`); }
   }
   return qrLib;
 }
@@ -104,9 +104,8 @@ function renderHtml(file, req, res) {
 
 app.get(['/', '/index.html'], (req, res) => renderHtml('index.html', req, res));
 app.get('/legal.html', (req, res) => renderHtml('legal.html', req, res));
-app.get(['/share', '/share.html'], (req, res) => renderHtml('share.html', req, res));
 
-// QR code for the share page — rendered server-side so the app carries no CDN
+// QR code for the share tab — rendered server-side so the app carries no CDN
 // dependency and keeps working on venue wifi.
 const qrCache = new Map();
 app.get('/qr.svg', async (req, res) => {

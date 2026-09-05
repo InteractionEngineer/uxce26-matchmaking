@@ -33,7 +33,7 @@ It was built during the conference itself: the server and core flow on the night
 - **Pick your sessions.** Sessions are grouped by day → timeslot → list of pitches, mirroring the Barcamp board. Tap to mark the ones you attended. Each timeslot shows a count.
 - **Save your profile.** Name (required) and LinkedIn URL (optional). On save, the server mints a UUID and the browser stores it in `localStorage` — that token is the only identity, there is no password.
 - **See your matches.** Other participants ranked by number of overlapping sessions — including the full list of sessions each of them attended, the specific overlaps, and their LinkedIn link if provided.
-- **Share it.** `/share` is a full-screen QR code of the app's own URL, plus a native share sheet and a copy button — for handing the app to someone mid-conversation. The QR is rendered server-side, so it works on venue wifi with no CDN in the loop.
+- **Share it.** A third tab holds a QR code of the app's own URL, plus a native share sheet and a copy button — for handing the app to someone mid-conversation. The QR is rendered server-side, so it works on venue wifi with no CDN in the loop, and the screen is kept awake while that tab is open.
 
 ---
 
@@ -60,15 +60,15 @@ It was built during the conference itself: the server and core flow on the night
 ├── Dockerfile                    # Builds native deps in a first stage, then copies into a lean runtime image; runs as a non-root user, with a healthcheck
 ├── docker-compose.yml            # Volume for /data, expects external proxy network
 ├── lib/
-│   └── board.js                  # Event registry + format adapters → canonical board
+│   ├── board.js                  # Event registry + format adapters → canonical board
+│   └── admin.js                  # /admin, mounted only when ADMIN_TOKEN is set
 ├── events/
 │   ├── index.json                # Which events exist, their names and legal wording
 │   ├── uxchh26.json              # UXcamp Hamburg 2026 — session-plan export
 │   ├── uxce26.json               # UXcamp Europe 2026 — scraped Barcamp board
 │   └── _example.session-plan.json # Reference for the session-plan format
 ├── public/
-│   ├── index.html                # The entire client
-│   ├── share.html                # Full-screen QR code for sharing the app
+│   ├── index.html                # The entire client — sessions, matches and share tabs
 │   └── legal.html                # Imprint + privacy policy, placeholders filled at request time
 └── data/                         # SQLite DB (gitignored), created on first run
     └── uxcamp.db
@@ -136,7 +136,6 @@ JSON throughout. No auth — the token in the URL is the only credential, which 
 | `POST` | `/api/users` | Create (no token in body) or update (token in body) |
 | `GET` | `/api/matches/:token` | Other users ranked by session overlap |
 | `GET` | `/admin` | Admin dashboard (only when `ADMIN_TOKEN` is set) |
-| `GET` | `/share` | Full-screen QR code page |
 | `GET` | `/qr.svg` | QR code for the app's public URL, as SVG |
 
 ---

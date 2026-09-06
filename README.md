@@ -265,14 +265,15 @@ The server starts even if all three fail; the client then shows "the board isn't
 
 Feature requests collected during and after the event:
 
-- Speaker names on session cards (originally omitted for privacy)
-- Room names on session cards
 - Profile picture from LinkedIn
 - Clearer affordance that the match card links to LinkedIn
+- If no link was provided, make this clear instead of showing nothing (can be misinterpreted as "already connected")
 - Topics / session history across years
 - Search within people / matches
 - Map of participants based on LinkedIn location
 - A dedicated "your match card" view, separate from the editable list
+- See, if people are already connected on LinkedIn
+- Make it easier connecting by using a popup with an iframe instead of opening another tab (might make it too easy to spam-connect?!)
 
 Bugs:
 

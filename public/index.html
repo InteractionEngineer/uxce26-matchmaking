@@ -834,67 +834,21 @@
   }
 
   // ── Where to land on the sessions tab ─────────────
-  // Coming back to the board, the useful place is the slot that still needs an
-  // answer. If every slot has one, show where the day currently is instead.
-  const ymdLocal = d =>
-    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-
-  // "10:00–14:45" → 600. Slot times are the event's own local time, so they are
-  // compared as plain minutes, never through Date.
-  const minutesOf = hhmm => {
-    const m = /^(\d{1,2}):(\d{2})/.exec((hhmm || '').trim());
-    return m ? +m[1] * 60 + +m[2] : null;
-  };
-
-  function slotRange(slot) {
-    const [from, to] = (slot.time || '').split(/[–—-]/);
-    const start = minutesOf(from);
-    if (start == null) return null;
-    // A slot without an end time still occupies the board for a while — an hour
-    // is close enough to keep "now" inside it.
-    return { start, end: minutesOf(to) ?? start + 60 };
+  // On load, the useful place is the first slot that still has no answer. If
+  // every slot has one, there is nothing to jump to — stay at the top.
+  function firstUnansweredSlot() {
+    return slots.filter(s => s.sessions.some(x => x.selectable))
+                .find(s => countPicked(s) === 0) || null;
   }
 
-  // Returns { slot, reason } — the reason is what the toast is for: landing on
-  // the slot that is running right now is worth saying out loud, the rest is not.
-  function slotScrollTarget() {
-    const pickable = slots.filter(s => s.sessions.some(x => x.selectable));
-    if (!pickable.length) return null;
-
-    const unanswered = pickable.find(s => countPicked(s) === 0);
-    if (unanswered) return { slot: unanswered, reason: 'unanswered' };
-
-    // Nothing left to fill in — fall back to the time of day, but only while the
-    // camp is actually running. On any other day there is no "now" on the board.
-    const now = new Date();
-    const today = ymdLocal(now);
-    const days = board?.days || [];
-    if (days.length && !days.includes(today)) return null;
-
-    const todays = pickable.filter(s => !s.date || s.date === today);
-    if (!todays.length) return null;
-
-    const mins = now.getHours() * 60 + now.getMinutes();
-    const running = todays.find(s => { const r = slotRange(s); return r && mins >= r.start && mins < r.end; });
-    if (running) return { slot: running, reason: 'now' };
-
-    const upcoming = todays.find(s => { const r = slotRange(s); return r && r.start >= mins; });
-    // Past the last session, the nearest slot is the one that just ended.
-    return { slot: upcoming || todays[todays.length - 1], reason: upcoming ? 'next' : 'last' };
-  }
-
-  // Called on the sessions tab and once on load. Measuring right after the view
-  // was un-hidden is fine: reading the slot's box forces the layout the browser
-  // still owes us.
+  // Called once on load. Measuring right after the view was un-hidden is fine:
+  // reading the slot's box forces the layout the browser still owes us.
   function jumpToRelevantSlot(behavior) {
     // While searching, the list is filtered down to what was asked for — jumping
     // somewhere else would fight that.
     if (query) return;
-    const target = slotScrollTarget();
-    if (!target) return;
-    scrollToSlot(target.slot, behavior);
-    // Landing somewhere other than the top needs a reason, or it reads as a glitch.
-    if (target.reason === 'now') toast(`Jumped to ${target.slot.label} — on right now`);
+    const target = firstUnansweredSlot();
+    if (target) scrollToSlot(target, behavior);
   }
 
   function scrollToSlot(slot, behavior) {
@@ -908,8 +862,15 @@
   }
 
   // ── Tabs ──────────────────────────────────────────
+  // Each tab keeps the place it was left at, so switching back and forth does
+  // not lose someone's spot halfway down the board.
+  let activeTab = 'sessions';
+  const tabScroll = { sessions: 0, matches: 0, share: 0 };
+
   async function switchTab(tab) {
     const leavingUnsaved = tab !== 'sessions' && me && !eqSets(picked, saved);
+    tabScroll[activeTab] = window.scrollY;
+    activeTab = tab;
 
     for (const [id, view, name] of [['tA','vSessions','sessions'], ['tB','vMatches','matches'], ['tC','vShare','share']]) {
       document.getElementById(id).classList.toggle('on', tab === name);
@@ -919,10 +880,10 @@
     // Matches are computed server-side from the saved selection, so the save has
     // to land before they are fetched.
     if (leavingUnsaved) await autoSave();
-    if (tab === 'matches') loadMatches();
-    // While searching, the list is filtered down to what was asked for — jumping
-    // somewhere else would fight that.
-    if (tab === 'sessions') jumpToRelevantSlot();
+    // Wait for the list before restoring — the page is too short to scroll while
+    // the matches are still on their way.
+    if (tab === 'matches') await loadMatches();
+    window.scrollTo({ top: tabScroll[tab] || 0, behavior: 'auto' });
     // Only hold the screen awake while the code is actually on screen.
     tab === 'share' ? keepAwake() : releaseWake();
   }
